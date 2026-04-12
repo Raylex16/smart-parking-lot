@@ -1,6 +1,6 @@
 # Smart Parking Lot
 
-Simulador de ingreso de vehiculos a un parqueadero inteligente, desarrollado en **C# 14 / .NET 10**. El proyecto tiene un enfoque **educativo y de diseno de software**, aplicando intensivamente los patrones y principios **GRASP** (General Responsibility Assignment Software Patterns).
+Simulador de ingreso de vehiculos a un parqueadero inteligente, desarrollado en **C# 14 / .NET 10**. El proyecto tiene un enfoque **educativo y de diseño de software**, aplicando intensivamente los patrones y principios **GRASP** (General Responsibility Assignment Software Patterns).
 
 ## Objetivo
 
