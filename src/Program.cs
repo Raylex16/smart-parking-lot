@@ -10,7 +10,7 @@ using SmartParkingLot.Services;
 // Toda la lógica de negocio vive en Domain/, Services/ y Controllers/.
 //
 // GRASP - Low Coupling: Program.cs conoce todas las clases concretas porque
-// ES el único lugar donde eso es aceptable (composition root). El resto del
+// ES el único lugar donde es   o es aceptable (composition root). El resto del
 // sistema solo conoce interfaces o clases de dominio.
 // =============================================================================
 
