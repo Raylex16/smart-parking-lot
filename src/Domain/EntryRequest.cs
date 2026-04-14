@@ -1,14 +1,5 @@
 namespace SmartParkingLot.Domain;
 
-/// <summary>
-/// Representa el evento de sistema: un vehículo solicita entrar al parqueadero.
-/// </summary>
-/// <remarks>
-/// GRASP - Controller (soporte):
-/// EntryRequest es el objeto que encapsula el evento del sistema.
-/// El GateController lo recibe y lo procesa; así el evento queda bien
-/// definido como un objeto de dominio y no como parámetros sueltos.
-/// </remarks>
 public class EntryRequest
 {
     public string VehicleId { get; }
