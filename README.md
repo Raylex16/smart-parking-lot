@@ -52,7 +52,7 @@ EntryRequest ──> GateController ──> ICapacityService ──> ParkingLot 
 
 The full class diagram of the IoT core module is available here:
 
-![System UML Diagram](docs/uml/uml_2.drawio.pn)
+![System UML Diagram](docs/uml/uml_2.drawio.png)
 
 [View on draw.io](https://drive.google.com/file/d/1jrm7Cnc-E39-5w8stSZKdFhLRO3f-935/view?usp=sharing)
 
