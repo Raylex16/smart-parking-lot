@@ -79,6 +79,6 @@ The simulator processes 4 entry requests for a parking lot with 3 spots:
 
 ## Technologies
 
-- C# 14 con sintaxis moderna (Records, Pattern Matching, top-level statements)
+- C# 14 with modern sintax (Records, Pattern Matching, top-level statements)
 - .NET 10
 - Nullable reference types enabled
