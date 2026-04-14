@@ -3,13 +3,15 @@ namespace SmartParkingLot.Domain;
 public class ParkingSpot
 {
     public string Id { get; }
+    public string Address { get; }
     public string Type { get; }
     public string Floor { get; }
     public bool IsOccupied { get; private set; }
 
-    public ParkingSpot(string id, string type, string floor)
+    public ParkingSpot(string id, string address, string type, string floor)
     {
         Id = id;
+        Address = address;
         Type = type;
         Floor = floor;
         IsOccupied = false;
@@ -34,5 +36,5 @@ public class ParkingSpot
     public string GetStatus() => IsOccupied ? "Ocupado" : "Disponible";
 
     public override string ToString() =>
-        $"[{Id} | Tipo: {Type} | Piso: {Floor} | Estado: {GetStatus()}]";
+        $"[{Id} | Ubicación: {Address} | Tipo: {Type} | Piso: {Floor} | Estado: {GetStatus()}]";
 }
