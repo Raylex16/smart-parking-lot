@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>SmartParkingLot.Cli</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\SmartParkingLot.Core.csproj" />
+    <ProjectReference Include="..\Application\SmartParkingLot.Application.csproj" />
+    <ProjectReference Include="..\Hardware\SmartParkingLot.Hardware.csproj" />
+  </ItemGroup>
+
+</Project>

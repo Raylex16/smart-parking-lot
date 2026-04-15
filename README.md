@@ -19,38 +19,66 @@ Demonstrate how GRASP principles guide responsibility assignment in a real objec
 
 ## Architecture
 
+The solution is split into **4 projects** following Clean Architecture principles, with the Dependency Inversion Principle (DIP) ensuring that high-level modules depend on abstractions defined in Core:
+
 ```
 src/
-├── Program.cs              # Composition Root (DI manual, top-level statements)
-├── Controllers/
-│   ├── IGateController.cs   # Gate controller contract
-│   └── GateController.cs    # GRASP Controller: orchestrates the use case
-├── Services/
-│   ├── ICapacityService.cs  # Capacity service contract
-│   └── CapacityService.cs   # Coordinates availability checks
-└── Domain/
-    ├── EntryRequest.cs      # System event: entry request
-    ├── ParkingLot.cs        # Information Expert: spot collection
-    └── ParkingSpot.cs       # Information Expert: individual spot state
+├── Core/                        # SmartParkingLot.Core — Zero dependencies
+│   ├── Entities/                #   ParkingLot, ParkingSpot
+│   ├── Ports/                   #   Interfaces: IGate, ISensor, ICapacityService,
+│   │                            #   IAlertService, IGateRequestHandler
+│   ├── Requests/                #   Request, EntryRequest, ExitRequest
+│   ├── Readings/                #   SensorReading, GateSensorReading, SpotSensorReading
+│   ├── Enums/                   #   GateType, ParkingMode
+│   ├── Alert.cs, User.cs, Constants.cs
+│
+├── Application/                 # SmartParkingLot.Application → Core
+│   ├── Controllers/             #   GateController (implements IGateRequestHandler)
+│   └── Services/                #   CapacityService, AlertService
+│
+├── Hardware/                    # SmartParkingLot.Hardware → Core
+│   ├── Actuator.cs              #   Abstract base for IoT actuators
+│   ├── Gate.cs                  #   Physical gate (implements IGate)
+│   └── Sensor.cs                #   Generic sensor (implements ISensor)
+│
+└── Cli/                         # SmartParkingLot.Cli → Core, Application, Hardware
+    └── Program.cs               #   Composition Root (manual DI, top-level statements)
 ```
+
+### Dependency Graph
+
+```
+         Cli (Composition Root)
+        / |          \
+       v  v           v
+Application  Hardware  (Future: Desktop)
+       \      /
+        v    v
+         Core
+```
+
+- `Core` has **zero** external dependencies — it is the pure domain model.
+- `Application` and `Hardware` depend **only** on `Core` and do **not** know about each other.
+- `Cli` references all three projects and wires them together via manual DI.
 
 ### Use Case Flow
 
 ```
-EntryRequest ──> GateController ──> ICapacityService ──> ParkingLot ──> ParkingSpot
-                   (Controller)       (Low Coupling)    (Info Expert)   (Info Expert)
+EntryRequest ──> IGateRequestHandler ──> ICapacityService ──> ParkingLot ──> ParkingSpot
+                      (DIP)                (Low Coupling)    (Info Expert)   (Info Expert)
 ```
 
-1. An `EntryRequest` is created with the vehicle ID and type.
-2. `GateController` receives the request and queries `ICapacityService`.
-3. `CapacityService` delegates to `ParkingLot` to verify availability.
-4. `ParkingLot` finds the first available `ParkingSpot`.
-5. `ParkingSpot` is marked as occupied (`Occupy()`).
-6. `GateController` opens the gate when access is granted.
+1. An `EntryRequest` is created with the vehicle plate.
+2. `GateController` (implementing `IGateRequestHandler`) receives the request and delegates via polymorphism.
+3. The request queries `ICapacityService` to check availability.
+4. `CapacityService` delegates to `ParkingLot` to verify availability.
+5. `ParkingLot` finds the first available `ParkingSpot`.
+6. `ParkingSpot` is marked as occupied (`Occupy()`).
+7. The request calls `handler.OpenGate()` which opens the physical gate via `IGate`.
 
 ## UML Modeling
 
-The full class diagram of the IoT core module is available here:
+> **Nota:** El diagrama UML actual refleja la estructura monolítica anterior (namespaces `SmartParkingLot.Domain`, `.Services`, `.Controllers`). Tras la modularización en 4 proyectos (`Core`, `Application`, `Hardware`, `Cli`) con nuevas interfaces (`IGateRequestHandler`, `IGate`) y el namespace `SmartParkingLot.Core.Ports`, el diagrama requiere actualización. Consulta la sección [Architecture](#architecture) para la estructura vigente.
 
 ![System UML Diagram](docs/uml/uml_2.drawio.png)
 
@@ -63,11 +91,11 @@ The full class diagram of the IoT core module is available here:
 ## Run
 
 ```bash
-# Build
+# Build the entire solution
 dotnet build
 
 # Run simulator
-dotnet run --project smart-parking-lot.csproj
+dotnet run --project src/Cli/SmartParkingLot.Cli.csproj
 ```
 
 ### Expected Output
