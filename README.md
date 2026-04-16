@@ -78,9 +78,19 @@ EntryRequest ──> IGateRequestHandler ──> ICapacityService ──> Parkin
 
 ## UML Modeling
 
-> **Nota:** El diagrama UML actual refleja la estructura monolítica anterior (namespaces `SmartParkingLot.Domain`, `.Services`, `.Controllers`). Tras la modularización en 4 proyectos (`Core`, `Application`, `Hardware`, `Cli`) con nuevas interfaces (`IGateRequestHandler`, `IGate`) y el namespace `SmartParkingLot.Core.Ports`, el diagrama requiere actualización. Consulta la sección [Architecture](#architecture) para la estructura vigente.
+### Segundo Avance (actual)
 
-![System UML Diagram](docs/uml/uml_2.drawio.png)
+El diagrama UML del segundo avance refleja la arquitectura modular actual con Clean Architecture: `Core`, `Application`, `Hardware` y `Cli`, incluyendo las interfaces `IGateRequestHandler`, `IGate` y el namespace `SmartParkingLot.Core.Ports`.
+
+![System UML Diagram - Segundo Avance](docs/segundo-avance/uml/SmartParkingLot%20-%20UML%20Class%20Diagram.png)
+
+📄 [Ver PDF del diagrama](docs/segundo-avance/uml/SmartParkingLot%20-%20UML%20Class%20Diagram.pdf)
+
+### Primer Avance
+
+> **Nota:** Este diagrama refleja la estructura monolítica original (namespaces `SmartParkingLot.Domain`, `.Services`, `.Controllers`), antes de la modularización.
+
+![System UML Diagram - Primer Avance](docs/primer-avance/uml/uml_2.drawio.png)
 
 [View on draw.io](https://drive.google.com/file/d/1jrm7Cnc-E39-5w8stSZKdFhLRO3f-935/view?usp=sharing)
 
