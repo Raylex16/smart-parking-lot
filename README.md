@@ -84,7 +84,7 @@ The UML diagram reflects the current modular Clean Architecture: `Core`, `Applic
 
 ![System UML Diagram - Second Preview](docs/second-preview/uml/SmartParkingLot%20-%20UML%20Class%20Diagram.png)
 
-[View PDF](docs/second-preview/uml/SmartParkingLot%20-%20UML%20Class%20Diagram.pdf)
+[View on Lucidchart](https://lucid.app/lucidchart/150f9d58-4633-40fe-8139-e8be27bf6870/edit?viewport_loc=-1370%2C-179%2C5342%2C2728%2Cpage1&invitationId=inv_a9123feb-52e4-49bf-b4a7-9a4e2cc6b314)
 
 ### First Preview
 
