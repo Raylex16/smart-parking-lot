@@ -5,7 +5,7 @@ namespace SmartParkingLot.Hardware;
 
 // GRASP - Polymorphism + Information Expert: Sensor genérico que captura lecturas tipadas
 // La simulación de hardware se hace en CaptureReading(), similar a Gate.ExecCommand()
-public class Sensor<T> : ISensor where T : SensorReading
+public class Sensor<T> : ISensor, ISensorCapture<T> where T : SensorReading
 {
     private readonly string _id;
     private readonly string _type;

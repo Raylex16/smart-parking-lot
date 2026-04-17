@@ -23,6 +23,16 @@ var spotSensorA1 = new Sensor<SpotSensorReading>("SEN-SPOT-A1", "Ultrasonido");
 var spotSensorA2 = new Sensor<SpotSensorReading>("SEN-SPOT-A2", "Ultrasonido");
 var spotSensorB1 = new Sensor<SpotSensorReading>("SEN-SPOT-B1", "Ultrasonido");
 
+// ── 2.1 Bridge serial: conecta Arduino fisico con sensores via ISensorCapture (DIP) ──
+// Mapeo: hardware ID -> (spot ID del dominio, sensor)
+var sensorMap = new Dictionary<string, (string SpotId, ISensorCapture<SpotSensorReading> Sensor)>
+{
+    ["IR1"] = ("A1", spotSensorA1)
+};
+
+using var bridge = new ArduinoSerialBridge("COM6", 9600, sensorMap);
+bridge.StartListening();
+
 // ── 3. Crear puertas ──
 var entryGate = new Gate("G-01", GateType.ENTRY, DefaultPin);
 var exitGate  = new Gate("G-02", GateType.EXIT, DefaultPin);
@@ -121,3 +131,28 @@ Console.WriteLine("\n═══════════════════�
 Console.WriteLine("Estado final de espacios:");
 foreach (var spot in lot.GetSpots())
     Console.WriteLine($"  {spot}");
+
+// ── Monitoreo en tiempo real: escucha lecturas del Arduino ──
+Console.WriteLine("\n══════════════════════════════════════════════════");
+Console.WriteLine("  MONITOREO EN TIEMPO REAL (Ctrl+C para salir)");
+Console.WriteLine("══════════════════════════════════════════════════");
+
+bool? lastState = null;
+
+while (true)
+{
+    var snapshot = spotSensorA1.GetSnapshot();
+    if (snapshot is not null && snapshot.IsOccupied != lastState)
+    {
+        lastState = snapshot.IsOccupied;
+        Console.WriteLine($"\n[Monitoreo] Cambio detectado: {snapshot}");
+        capacityService.UpdateSpotState(snapshot);
+
+        foreach (var spot in lot.GetSpots())
+            Console.WriteLine($"  {spot}");
+
+        Console.WriteLine($"  Espacios disponibles: {lot.AvailableSpots}");
+    }
+
+    Thread.Sleep(500);
+}
