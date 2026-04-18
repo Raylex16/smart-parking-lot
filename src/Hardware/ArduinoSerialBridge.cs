@@ -1,3 +1,4 @@
+
 using System.IO.Ports;
 using SmartParkingLot.Core;
 using SmartParkingLot.Core.Ports;
@@ -26,6 +27,8 @@ public class ArduinoSerialBridge : IDisposable
         Dictionary<string, (string SpotId, ISensorCapture<SpotSensorReading> Sensor)> sensorMap)
     {
         _serialPort = new SerialPort(portName, baudRate);
+        _serialPort.ReadTimeout = SERIAL_TIMEOUT_MS;
+        _serialPort.WriteTimeout = SERIAL_TIMEOUT_MS;
         _sensorMap = sensorMap;
     }
 
