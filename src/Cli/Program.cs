@@ -1,71 +1,54 @@
-using SmartParkingLot.Core;
-using SmartParkingLot.Core.Interfaces;
 using SmartParkingLot.Application;
+using SmartParkingLot.Application.Handlers;
+using SmartParkingLot.Application.Infrastructure;
+using SmartParkingLot.Application.UseCases;
+using SmartParkingLot.Core;
+using SmartParkingLot.Core.Events;
+using SmartParkingLot.Core.Interfaces;
 using SmartParkingLot.Hardware;
 
+// Composition Root: único lugar donde se ensamblan las dependencias.
 
-// Program.cs es el único lugar donde se ensamblan las dependencias
-// de toda la aplicación.
-// Aquí se aplica Dependency Injection manual con top-level statements.
-
-
-// ── 1. Crear el parqueadero y sus espacios ──
-
+// 1. Dominio
 var lot = new ParkingLot("LOT-01", "Campus Barcelona", ParkingMode.AUTOMATIC);
-lot.AddSpot(new ParkingSpot("A1", "Zona-A Fila-1", "Estándar",  "Planta Baja"));
+lot.AddSpot(new ParkingSpot("A1", "Zona-A Fila-1", "Estándar", "Planta Baja"));
 
+// 2. Bus in-process
+IEventPublisher bus = new InProcessEventBus();
 
-// ── 2. Crear sensor ──
-var spotSensorA1 = new Sensor<SpotSensorReading>("SEN-SPOT-A1", "Ultrasonido");
+// 3. Hardware: bridge (inbound) + dispatcher (outbound)
+using var bridge = new ArduinoSerialBridge(DEFAULT_PORT_NAME, DEFAULT_BAUD_RATE, bus);
+using var dispatcher = new SerialCommandDispatcher(bridge);
 
+// 4. Caso de uso: lecturas -> dominio
+var sensorToSpot = new Dictionary<string, string> { ["IR1"] = "A1" };
+var handleReading = new HandleSensorReadingUseCase(lot, sensorToSpot);
+bus.Subscribe<SensorReadingReceived>(handleReading.Handle);
 
-// ── 2.1 Bridge serial: conecta Arduino fisico con sensores via ISensorCapture (DIP) ──
-// Mapeo: hardware ID -> (spot ID del dominio, sensor)
-var sensorMap = new Dictionary<string, (string SpotId, ISensorCapture<SpotSensorReading> Sensor)>
-{
-    ["IR1"] = ("A1", spotSensorA1)
-};
+// 5. Handler: eventos de dominio -> comandos
+var spotToActuator = new Dictionary<string, string> { ["A1"] = "LED1" };
+var occupancyHandler = new SpotOccupancyChangedHandler(dispatcher, spotToActuator);
 
-using var bridge = new ArduinoSerialBridge(DEFAULT_PORT_NAME, DEFAULT_BAUD_RATE, sensorMap);
-bridge.StartListening();
+foreach (var spot in lot.GetSpots())
+    spot.OccupancyChanged += occupancyHandler.Handle;
 
-
+// 6. Reglas de capacidad / alertas (compatibilidad con flujo de puertas previo)
 ICapacityService capacityService = new CapacityService(lot);
 IAlertService alertService = new AlertService();
 var gateController = new GateController(capacityService, alertService);
+_ = gateController;
 
+// 7. Arrancar
+bridge.StartListening();
 
-//funcionamiento con sensor IR
 Console.WriteLine("╔══════════════════════════════════════════════════╗");
 Console.WriteLine("║                Smart Parking Lot                 ║");
 Console.WriteLine("╚══════════════════════════════════════════════════╝");
 Console.WriteLine($"Parqueadero : {lot.Name}");
 Console.WriteLine($"Modo        : {lot.Mode}");
 Console.WriteLine($"Espacios    : {lot.TotalSpots} totales | {lot.AvailableSpots} disponibles");
-Console.WriteLine($"Sensores    : {spotSensorA1}");
+Console.WriteLine("Flujo bidireccional OK. Ctrl+C para salir.");
 
-
-
-Console.WriteLine("╔═════════════════════════════════════════════════╗");
-Console.WriteLine("║             MONITOREO EN TIEMPO REAL            ║");
-Console.WriteLine("╚═════════════════════════════════════════════════╝");
-
-bool? lastState = null;
-
-while (true)
-{
-    var snapshot = spotSensorA1.GetSnapshot();
-    if (snapshot is not null && snapshot.IsOccupied != lastState)
-    {
-        lastState = snapshot.IsOccupied;
-        Console.WriteLine($"\n[Monitoreo] Cambio detectado: {snapshot}");
-        capacityService.UpdateSpotState(snapshot);
-
-        foreach (var spot in lot.GetSpots())
-            Console.WriteLine($"  {spot}");
-
-        Console.WriteLine($"  Espacios disponibles: {lot.AvailableSpots}");
-    }
-
-    Thread.Sleep(MONITOR_POLL_DELAY_MS);
-}
+var done = new ManualResetEventSlim();
+Console.CancelKeyPress += (_, e) => { e.Cancel = true; done.Set(); };
+done.Wait();
