@@ -1,5 +1,5 @@
 using SmartParkingLot.Core;
-using SmartParkingLot.Core.Ports;
+using SmartParkingLot.Core.Interfaces;
 
 namespace SmartParkingLot.Application;
 
@@ -44,7 +44,8 @@ public class CapacityService : ICapacityService
 
     public void UpdateSpotState(SpotSensorReading reading)
     {
-        // GRASP - Information Expert: El servicio recibe la lectura del sensor y actualiza el spot correspondiente
+        // GRASP - Information Expert: El servicio localiza el spot y delega la decisión
+        // de cambio de estado (con idempotencia) a la propia entidad.
         var spots = _parkingLot.GetSpots();
         var spot = spots.FirstOrDefault(s => s.Id == reading.SpotId);
 
@@ -54,15 +55,6 @@ public class CapacityService : ICapacityService
             return;
         }
 
-        if (reading.IsOccupied && spot.IsAvailable())
-        {
-            spot.Occupy();
-            Console.WriteLine($"[CapacityService] Espacio '{reading.SpotId}' marcado como OCUPADO por sensor");
-        }
-        else if (!reading.IsOccupied && !spot.IsAvailable())
-        {
-            spot.Release();
-            Console.WriteLine($"[CapacityService] Espacio '{reading.SpotId}' marcado como LIBRE por sensor");
-        }
+        spot.ApplyOccupancy(reading.IsOccupied, "sensor");
     }
 }

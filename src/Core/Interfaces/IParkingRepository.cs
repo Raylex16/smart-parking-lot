@@ -1,6 +1,6 @@
 using SmartParkingLot.Core;
 
-namespace SmartParkingLot.Core.Ports;
+namespace SmartParkingLot.Core.Interfaces;
 
 /// <summary>
 /// SOLID - Dependency Inversion Principle (DIP):

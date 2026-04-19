@@ -1,4 +1,4 @@
-namespace SmartParkingLot.Core.Ports;
+namespace SmartParkingLot.Core.Interfaces;
 
 // SOLID - Dependency Inversion Principle (DIP): Application trabaja con esta
 // abstracción para controlar puertas, mientras Hardware provee la implementación

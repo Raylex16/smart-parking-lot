@@ -1,4 +1,4 @@
-namespace SmartParkingLot.Core.Ports;
+namespace SmartParkingLot.Core.Interfaces;
 
 // GRASP - Low Coupling: Interfaz que desacopla la lógica de capacidad de sus consumidores
 // SOLID - Dependency Inversion Principle: Los módulos de alto nivel (Request, Controller)

@@ -1,3 +1,5 @@
+using SmartParkingLot.Core.Events;
+
 namespace SmartParkingLot.Core;
 
 public class ParkingSpot
@@ -7,6 +9,8 @@ public class ParkingSpot
     public string Type { get; }
     public string Floor { get; }
     public bool IsOccupied { get; private set; }
+
+    public event Action<SpotOccupancyChanged>? OccupancyChanged;
 
     public ParkingSpot(string id, string address, string type, string floor)
     {
@@ -31,6 +35,16 @@ public class ParkingSpot
         if (!IsOccupied)
             throw new InvalidOperationException(string.Format(SPOT_ALREADY_AVAILABLE_MESSAGE_TEMPLATE, Id));
         IsOccupied = false;
+    }
+
+    // GRASP - Information Expert: el spot conoce su estado y decide si hay cambio.
+    // Idempotente: si el estado no cambia, no emite evento.
+    public void ApplyOccupancy(bool isOccupied, string source)
+    {
+        if (IsOccupied == isOccupied) return;  // idempotencia
+        IsOccupied = isOccupied;
+        OccupancyChanged?.Invoke(
+            new SpotOccupancyChanged(Id, isOccupied, source, DateTimeOffset.UtcNow));
     }
 
     public string GetStatus() => IsOccupied ? SPOT_STATUS_OCCUPIED : SPOT_STATUS_AVAILABLE;
