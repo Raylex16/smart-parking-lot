@@ -22,18 +22,18 @@ public class ParkingSpot
     public void Occupy()
     {
         if (IsOccupied)
-            throw new InvalidOperationException($"El espacio '{Id}' ya está ocupado.");
+            throw new InvalidOperationException(string.Format(SPOT_ALREADY_OCCUPIED_MESSAGE_TEMPLATE, Id));
         IsOccupied = true;
     }
 
     public void Release()
     {
         if (!IsOccupied)
-            throw new InvalidOperationException($"El espacio '{Id}' ya está libre.");
+            throw new InvalidOperationException(string.Format(SPOT_ALREADY_AVAILABLE_MESSAGE_TEMPLATE, Id));
         IsOccupied = false;
     }
 
-    public string GetStatus() => IsOccupied ? "Ocupado" : "Disponible";
+    public string GetStatus() => IsOccupied ? SPOT_STATUS_OCCUPIED : SPOT_STATUS_AVAILABLE;
 
     public override string ToString() =>
         $"[{Id} | Ubicación: {Address} | Tipo: {Type} | Piso: {Floor} | Estado: {GetStatus()}]";

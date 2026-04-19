@@ -13,7 +13,7 @@ public class AlertService : IAlertService
     public void GenerateAlert(SensorReading reading)
     {
         _alertCounter++;
-        var alertId = $"ALR-{_alertCounter:D3}";
+        var alertId = $"{ALERT_ID_PREFIX}{_alertCounter:D3}";
 
         var (type, message) = reading switch
         {

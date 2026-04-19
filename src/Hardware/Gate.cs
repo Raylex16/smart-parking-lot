@@ -1,6 +1,5 @@
 using SmartParkingLot.Core;
 using SmartParkingLot.Core.Ports;
-using static SmartParkingLot.Core.Constants;
 
 namespace SmartParkingLot.Hardware;
 
@@ -21,7 +20,7 @@ public class Gate : Actuator, IGate
 
     public void Open()
     {
-        _angle = MaxAngle;
+        _angle = MAX_ANGLE;
 
         ExecCommand();
         Console.WriteLine($"[Gate {_id}] >>> PUERTA ABIERTA <<<");
@@ -29,14 +28,14 @@ public class Gate : Actuator, IGate
 
     public void Close()
     {
-        _angle = MinAngle;
+        _angle = MIN_ANGLE;
         ExecCommand();
     }
 
     public bool GetState()
     {
-        // Verdadero si está abierta (ángulo mayor a MinAngle)
-        return _angle > MinAngle;
+        // Verdadero si está abierta (ángulo mayor a MIN_ANGLE)
+        return _angle > MIN_ANGLE;
     }
 
     public override void ExecCommand()
