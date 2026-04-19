@@ -357,7 +357,7 @@ public class SqliteParkingRepository : IParkingRepository
     // ═══════════════════════════════════════════════════════════════════
 
     public async Task<bool> LogRequestAsync(string requestId, string vehiclePlate, string requestType,
-        string lotId, DateTime timestamp, bool approved, CancellationToken ct = default)
+        string lotId, DateTime timestamp, bool approved, string? releasedSpotId = null, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(requestId);
         ArgumentNullException.ThrowIfNull(vehiclePlate);
@@ -368,8 +368,8 @@ public class SqliteParkingRepository : IParkingRepository
         await connection.OpenAsync(ct);
 
         var sql = """
-            INSERT INTO RequestLogs (Id, VehiclePlate, RequestType, LotId, Timestamp, Approved)
-            VALUES (@Id, @VehiclePlate, @RequestType, @LotId, @Timestamp, @Approved);
+            INSERT INTO RequestLogs (Id, VehiclePlate, RequestType, LotId, ReleasedSpotId, Timestamp, Approved)
+            VALUES (@Id, @VehiclePlate, @RequestType, @LotId, @ReleasedSpotId, @Timestamp, @Approved);
         """;
         var result = await connection.ExecuteAsync(
             new CommandDefinition(sql,
@@ -379,6 +379,7 @@ public class SqliteParkingRepository : IParkingRepository
                     VehiclePlate = vehiclePlate,
                     RequestType = requestType,
                     LotId = lotId,
+                    ReleasedSpotId = releasedSpotId,
                     Timestamp = timestamp,
                     Approved = approved ? 1 : 0
                 },
@@ -558,6 +559,110 @@ public class SqliteParkingRepository : IParkingRepository
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    // Alertas (Full Capacity Alert: ID, Type, Message, Timestamp)
+    // ═══════════════════════════════════════════════════════════════════
+
+    public async Task<bool> LogAlertAsync(string alertId, string type, string message, 
+        DateTime timestamp, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(alertId);
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(message);
+
+        using var connection = GetConnection();
+        await connection.OpenAsync(ct);
+
+        var sql = """
+            INSERT INTO Alerts (Id, Type, Message, Timestamp)
+            VALUES (@Id, @Type, @Message, @Timestamp);
+        """;
+        var result = await connection.ExecuteAsync(
+            new CommandDefinition(sql,
+                new
+                {
+                    Id = alertId,
+                    Type = type,
+                    Message = message,
+                    Timestamp = timestamp
+                },
+                cancellationToken: ct));
+
+        return result > 0;
+    }
+
+    public async Task<IEnumerable<(string Id, string Type, string Message, DateTime Timestamp)>> 
+        GetAlertsAsync(CancellationToken ct = default)
+    {
+        using var connection = GetConnection();
+        await connection.OpenAsync(ct);
+
+        var sql = """
+            SELECT Id, Type, Message, Timestamp
+            FROM Alerts
+            ORDER BY Timestamp DESC;
+        """;
+        var records = await connection.QueryAsync<(string Id, string Type, string Message, DateTime Timestamp)>(
+            new CommandDefinition(sql, cancellationToken: ct));
+
+        return records;
+    }
+
+    public async Task<IEnumerable<(string Id, string Type, string Message, DateTime Timestamp)>> 
+        GetAlertsByTypeAsync(string type, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+
+        using var connection = GetConnection();
+        await connection.OpenAsync(ct);
+
+        var sql = """
+            SELECT Id, Type, Message, Timestamp
+            FROM Alerts
+            WHERE Type = @Type
+            ORDER BY Timestamp DESC;
+        """;
+        var records = await connection.QueryAsync<(string Id, string Type, string Message, DateTime Timestamp)>(
+            new CommandDefinition(sql, new { Type = type }, cancellationToken: ct));
+
+        return records;
+    }
+
+    public async Task<IEnumerable<(string Id, string Type, string Message, DateTime Timestamp)>> 
+        GetAlertsByDateRangeAsync(DateTime startDate, DateTime endDate, CancellationToken ct = default)
+    {
+        using var connection = GetConnection();
+        await connection.OpenAsync(ct);
+
+        var sql = """
+            SELECT Id, Type, Message, Timestamp
+            FROM Alerts
+            WHERE Timestamp BETWEEN @StartDate AND @EndDate
+            ORDER BY Timestamp DESC;
+        """;
+        var records = await connection.QueryAsync<(string Id, string Type, string Message, DateTime Timestamp)>(
+            new CommandDefinition(sql,
+                new { StartDate = startDate, EndDate = endDate },
+                cancellationToken: ct));
+
+        return records;
+    }
+
+    public async Task<bool> DeleteAlertsByDateAsync(DateTime beforeDate, CancellationToken ct = default)
+    {
+        using var connection = GetConnection();
+        await connection.OpenAsync(ct);
+
+        var sql = """
+            DELETE FROM Alerts
+            WHERE Timestamp < @BeforeDate;
+        """;
+        var result = await connection.ExecuteAsync(
+            new CommandDefinition(sql, new { BeforeDate = beforeDate }, cancellationToken: ct));
+
+        return result > 0;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // Helpers privados
     // ═══════════════════════════════════════════════════════════════════
 
@@ -602,6 +707,14 @@ public class SqliteParkingRepository : IParkingRepository
         public string Id { get; set; } = string.Empty;
         public string DeviceId { get; set; } = string.Empty;
         public string Action { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; }
+    }
+
+    private class AlertDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
         public DateTime Timestamp { get; set; }
     }
 }
