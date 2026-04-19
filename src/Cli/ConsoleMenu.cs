@@ -1,5 +1,6 @@
 using SmartParkingLot.Application;
 using SmartParkingLot.Core;
+using SmartParkingLot.Core.Events;
 using SmartParkingLot.Core.Interfaces;
 using SmartParkingLot.Hardware;
 
@@ -8,7 +9,8 @@ namespace SmartParkingLot.Cli;
 /// <summary>
 /// GRASP - Controller: Orquesta la interacción con el usuario y delega a los servicios
 /// de aplicación (GateController, CapacityService) y al repositorio de persistencia.
-/// GRASP - Low Coupling: Depende de abstracciones (ICapacityService, IParkingRepository).
+/// GRASP - Low Coupling: Depende de abstracciones (ICapacityService, IParkingRepository,
+/// IEventPublisher).
 /// </summary>
 public class ConsoleMenu
 {
@@ -16,6 +18,7 @@ public class ConsoleMenu
     private readonly GateController _gateController;
     private readonly ICapacityService _capacityService;
     private readonly IParkingRepository _repository;
+    private readonly IEventPublisher _bus;
     private readonly Dictionary<string, Sensor<SpotSensorReading>> _spotSensors;
     private readonly Sensor<GateSensorReading> _gateSensor;
 
@@ -24,6 +27,7 @@ public class ConsoleMenu
         GateController gateController,
         ICapacityService capacityService,
         IParkingRepository repository,
+        IEventPublisher bus,
         Dictionary<string, Sensor<SpotSensorReading>> spotSensors,
         Sensor<GateSensorReading> gateSensor)
     {
@@ -31,6 +35,7 @@ public class ConsoleMenu
         _gateController = gateController;
         _capacityService = capacityService;
         _repository = repository;
+        _bus = bus;
         _spotSensors = spotSensors;
         _gateSensor = gateSensor;
     }
@@ -170,6 +175,8 @@ public class ConsoleMenu
 
     // ═══════════════════════════════════════════════════════════════════
     // Opción 3: Actualizar estado de un espacio (sensor manual)
+    // Publica SensorReadingReceived en el bus → ejecuta HandleSensorReadingUseCase
+    // → dispara Spot.OccupancyChanged → handlers persisten spot_status + LED
     // ═══════════════════════════════════════════════════════════════════
     private async Task HandleManualSpotReadingAsync()
     {
@@ -195,19 +202,25 @@ public class ConsoleMenu
         var answer = Console.ReadLine()?.Trim().ToLowerInvariant();
         var isOccupied = answer == "s" || answer == "si" || answer == "sí" || answer == "y" || answer == "yes";
 
+        // 1) Captura local del snapshot del sensor (simulación hardware).
         var reading = new SpotSensorReading(spotId, isOccupied);
         sensor.CaptureReading(reading);
 
-        // Persistencia: lectura del sensor
-        await _repository.LogSensorReadingAsync(sensor.Id, isOccupied ? "1" : "0", DateTime.Now);
+        // 2) Persistir la lectura cruda para auditoría (rúbrica: "valor + timestamp").
+        var rawValue = isOccupied ? "1" : "0";
+        await _repository.LogSensorReadingAsync(sensor.Id, rawValue, DateTime.Now);
 
-        // Aplicar en memoria
-        _capacityService.UpdateSpotState(reading);
+        // 3) Publicar el evento en el bus. Esto dispara:
+        //    - HandleSensorReadingUseCase (aplica la ocupación al dominio)
+        //    - SpotOccupancyChangedHandler (envía comandos al actuador / LED)
+        //    - el subscriber de persistencia registrado en Program.cs (UpdateSpotStatusAsync)
+        _bus.Publish(new SensorReadingReceived(
+            SensorId: sensor.Id,
+            SensorType: sensor.GetSensorType(),
+            RawValue: rawValue,
+            Timestamp: DateTimeOffset.Now));
 
-        // Persistir el estado del spot
-        await _repository.UpdateSpotStatusAsync(spotId, isOccupied);
-
-        Console.WriteLine($"\n[Resultado] Espacio '{spotId}' actualizado a {(isOccupied ? "OCUPADO" : "LIBRE")}.");
+        Console.WriteLine($"\n[Resultado] Evento publicado — Espacio '{spotId}' → {(isOccupied ? "OCUPADO" : "LIBRE")}.");
     }
 
     // ═══════════════════════════════════════════════════════════════════
