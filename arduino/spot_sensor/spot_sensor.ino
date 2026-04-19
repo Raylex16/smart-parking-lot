@@ -1,27 +1,51 @@
-// Smart Parking Lot — Sensor IR de Spot
-// Protocolo serial: SENSOR_ID:VALOR (ej. "IR1:1")
-// VALOR: 1 = ocupado (objeto detectado), 0 = libre
+// Smart Parking Lot — Sketch bidireccional V1
+// Inbound: EVT:SENSOR:IR1:<0|1>
+// Outbound recibido: CMD:ACT:LED1:SET:<0|1>
+// Ack: ACK:<actuatorId> / NACK:<actuatorId>:<reason>
 
 const int IR1_PIN = 7;
-const int LED_PIN = 13;
+const int LED1_PIN = 13;
+int lastIR1 = -1;
+String inBuf = "";
 
 void setup() {
   pinMode(IR1_PIN, INPUT);
-  pinMode(LED_PIN, OUTPUT);
+  pinMode(LED1_PIN, OUTPUT);
   Serial.begin(9600);
 }
 
 void loop() {
-  int value1 = digitalRead(IR1_PIN);
+  int raw = digitalRead(IR1_PIN);
+  // Sensor IR activo en LOW: LOW = ocupado (1)
+  int occupied = (raw == LOW) ? 1 : 0;
+  if (occupied != lastIR1) {
+    lastIR1 = occupied;
+    Serial.print("EVT:SENSOR:IR1:");
+    Serial.println(occupied);
+  }
 
-  // Sensor IR activo en LOW: LOW = objeto detectado = ocupado (1)
-  bool occupied1 = (value1 == LOW);
+  while (Serial.available()) {
+    char c = (char)Serial.read();
+    if (c == '\n') { handleCommand(inBuf); inBuf = ""; }
+    else if (c != '\r') inBuf += c;
+  }
+  delay(20);
+}
 
-  Serial.print("IR1:");
-  Serial.println(occupied1 ? "1" : "0");
+void handleCommand(const String& line) {
+  if (!line.startsWith("CMD:ACT:")) return;
+  int idEnd = line.indexOf(':', 8);
+  if (idEnd < 0) { Serial.println("NACK:?:malformed"); return; }
+  String actId = line.substring(8, idEnd);
+  int actionEnd = line.indexOf(':', idEnd + 1);
+  if (actionEnd < 0) { Serial.print("NACK:"); Serial.print(actId); Serial.println(":no-action"); return; }
+  String action = line.substring(idEnd + 1, actionEnd);
+  String payload = line.substring(actionEnd + 1);
 
-  // LED indicador: encendido si cualquier sensor detecta
-  digitalWrite(LED_PIN, occupied1 ? HIGH : LOW);
-
-  delay(2000);
+  if (actId == "LED1" && action == "SET") {
+    digitalWrite(LED1_PIN, payload == "1" ? HIGH : LOW);
+    Serial.print("ACK:"); Serial.println(actId);
+  } else {
+    Serial.print("NACK:"); Serial.print(actId); Serial.println(":unsupported");
+  }
 }
