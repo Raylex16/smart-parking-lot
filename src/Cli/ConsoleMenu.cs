@@ -1,6 +1,6 @@
 using SmartParkingLot.Application;
 using SmartParkingLot.Core;
-using SmartParkingLot.Core.Ports;
+using SmartParkingLot.Core.Interfaces;
 using SmartParkingLot.Hardware;
 
 namespace SmartParkingLot.Cli;
