@@ -1,17 +1,17 @@
 
 using System.IO.Ports;
-using SmartParkingLot.Core;
+using SmartParkingLot.Core.Events;
 using SmartParkingLot.Core.Interfaces;
 
 namespace SmartParkingLot.Hardware;
 
 // GRASP - Pure Fabrication: No existe en el dominio del parqueadero.
-// Es infraestructura que traduce comunicacion serial a lecturas de dominio.
-// SOLID - DIP: Depende de ISensorCapture<SpotSensorReading>, no del concreto Sensor<T>.
+// Es infraestructura que traduce comunicacion serial a eventos de dominio.
+// SOLID - DIP: Depende de IEventPublisher, no de sensores concretos.
 public class ArduinoSerialBridge : IArduinoReader
 {
     private readonly SerialPort _serialPort;
-    private readonly Dictionary<string, (string SpotId, ISensorCapture<SpotSensorReading> Sensor)> _sensorMap;
+    private readonly IEventPublisher _events;
     private Thread? _readThread;
     private volatile bool _listening;
 
@@ -22,16 +22,13 @@ public class ArduinoSerialBridge : IArduinoReader
     /// </summary>
     /// <param name="portName">Puerto serial (ej. "COM6")</param>
     /// <param name="baudRate">Velocidad en baudios (ej. 9600)</param>
-    /// <param name="sensorMap">Mapeo: hardware ID -> (spot ID del dominio, sensor). El bridge traduce IDs de hardware a IDs de dominio.</param>
-    public ArduinoSerialBridge(
-        string portName,
-        int baudRate,
-        Dictionary<string, (string SpotId, ISensorCapture<SpotSensorReading> Sensor)> sensorMap)
+    /// <param name="events">Bus de eventos para publicar lecturas inbound.</param>
+    public ArduinoSerialBridge(string portName, int baudRate, IEventPublisher events)
     {
         _serialPort = new SerialPort(portName, baudRate);
         _serialPort.ReadTimeout = SERIAL_TIMEOUT_MS;
         _serialPort.WriteTimeout = SERIAL_TIMEOUT_MS;
-        _sensorMap = sensorMap;
+        _events = events;
     }
 
     /// <summary>
@@ -93,36 +90,28 @@ public class ArduinoSerialBridge : IArduinoReader
 
     private void ProcessLine(string line)
     {
-        // Formato esperado: SENSOR_ID:VALOR (ej. "IR1:1")
+        // Formato nuevo: EVT:SENSOR:<id>:<value>
+        if (SerialProtocol.TryParseEvent(line, out var evt))
+        {
+            _events.Publish(evt!);
+            return;
+        }
+
+        // Compat V0: <id>:<value>  (ej. "IR1:1")
         var parts = line.Split(':');
-
-        if (parts.Length != 2)
+        if (parts.Length == 2 && parts[1] is "0" or "1")
         {
-            Console.WriteLine($"[ArduinoSerialBridge] Formato invalido: '{line}'");
+            _events.Publish(new SensorReadingReceived(parts[0], "SENSOR", parts[1], DateTimeOffset.UtcNow));
             return;
         }
 
-        var sensorId = parts[0];
-        var rawValue = parts[1];
+        Console.WriteLine($"[ArduinoSerialBridge] Linea ignorada: '{line}'");
+    }
 
-        if (rawValue is not ("0" or "1"))
-        {
-            Console.WriteLine($"[ArduinoSerialBridge] Valor invalido para '{sensorId}': '{rawValue}' (esperado 0 o 1)");
-            return;
-        }
-
-        if (!_sensorMap.TryGetValue(sensorId, out var entry))
-        {
-            Console.WriteLine($"[ArduinoSerialBridge] Sensor no mapeado: '{sensorId}'");
-            return;
-        }
-
-        var isOccupied = rawValue == "1";
-        // Se usa el spotId del dominio (ej. "A1"), no el hardware ID (ej. "IR1")
-        var reading = new SpotSensorReading(entry.SpotId, isOccupied);
-        entry.Sensor.CaptureReading(reading);
-
-        Console.WriteLine($"[ArduinoSerialBridge] {sensorId} ({entry.SpotId}) -> {(isOccupied ? "OCUPADO" : "LIBRE")}");
+    public void WriteLine(string line)
+    {
+        if (!_serialPort.IsOpen) return;
+        _serialPort.WriteLine(line);
     }
 
     public void Dispose()
