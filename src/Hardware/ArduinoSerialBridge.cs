@@ -1,7 +1,7 @@
 
 using System.IO.Ports;
 using SmartParkingLot.Core;
-using SmartParkingLot.Core.Ports;
+using SmartParkingLot.Core.Interfaces;
 
 namespace SmartParkingLot.Hardware;
 

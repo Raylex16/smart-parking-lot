@@ -1,5 +1,5 @@
 using SmartParkingLot.Core;
-using SmartParkingLot.Core.Ports;
+using SmartParkingLot.Core.Interfaces;
 using SmartParkingLot.Application;
 using SmartParkingLot.Hardware;
 

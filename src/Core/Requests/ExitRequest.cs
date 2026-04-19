@@ -1,4 +1,4 @@
-using SmartParkingLot.Core.Ports;
+using SmartParkingLot.Core.Interfaces;
 
 namespace SmartParkingLot.Core;
 

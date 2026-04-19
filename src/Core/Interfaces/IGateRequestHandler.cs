@@ -1,4 +1,4 @@
-namespace SmartParkingLot.Core.Ports;
+namespace SmartParkingLot.Core.Interfaces;
 
 // GRASP - Indirection: Interfaz que desacopla los Request del controlador concreto
 // SOLID - Dependency Inversion Principle (DIP): Las entidades de dominio dependen
