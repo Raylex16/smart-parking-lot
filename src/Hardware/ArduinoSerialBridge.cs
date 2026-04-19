@@ -8,12 +8,14 @@ namespace SmartParkingLot.Hardware;
 // GRASP - Pure Fabrication: No existe en el dominio del parqueadero.
 // Es infraestructura que traduce comunicacion serial a lecturas de dominio.
 // SOLID - DIP: Depende de ISensorCapture<SpotSensorReading>, no del concreto Sensor<T>.
-public class ArduinoSerialBridge : IDisposable
+public class ArduinoSerialBridge : IArduinoReader
 {
     private readonly SerialPort _serialPort;
     private readonly Dictionary<string, (string SpotId, ISensorCapture<SpotSensorReading> Sensor)> _sensorMap;
     private Thread? _readThread;
     private volatile bool _listening;
+
+    public bool IsListening => _listening;
 
     /// <summary>
     /// Crea un bridge serial hacia Arduino.
