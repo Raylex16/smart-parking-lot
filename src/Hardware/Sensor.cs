@@ -11,6 +11,8 @@ public class Sensor<T> : ISensor, ISensorCapture<T> where T : SensorReading
     private readonly string _type;
     private T? _snapshot;
 
+    public string Id => _id;
+
     public Sensor(string id, string type)
     {
         _id = id;

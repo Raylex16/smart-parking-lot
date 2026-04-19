@@ -2,53 +2,116 @@ using SmartParkingLot.Application;
 using SmartParkingLot.Application.Handlers;
 using SmartParkingLot.Application.Infrastructure;
 using SmartParkingLot.Application.UseCases;
+using SmartParkingLot.Cli;
 using SmartParkingLot.Core;
 using SmartParkingLot.Core.Events;
 using SmartParkingLot.Core.Interfaces;
 using SmartParkingLot.Hardware;
+using SmartParkingLot.Persistence;
 
-// Composition Root: único lugar donde se ensamblan las dependencias.
 
-// 1. Dominio
-var lot = new ParkingLot("LOT-01", "Campus Barcelona", ParkingMode.AUTOMATIC);
-lot.AddSpot(new ParkingSpot("A1", "Zona-A Fila-1", "Estándar", "Planta Baja"));
+// Program.cs — Composition Root (manual DI con top-level statements).
+// GRASP - Creator: ensambla todas las dependencias del sistema en un único lugar.
 
-// 2. Bus in-process
+
+// ── 1. Inicializar persistencia ──
+
+var dbPath = Path.Combine(AppContext.BaseDirectory, DB_FOLDER_NAME, DB_FILE_NAME);
+Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
+
+var connectionString = $"Data Source={dbPath};Version=3;";
+
+var initializer = new DatabaseInitializer(connectionString);
+await initializer.InitializeAsync();
+
+IParkingRepository repository = new SqliteParkingRepository(connectionString);
+
+
+// ── 2. Cargar el parqueadero desde BD (estado persistente) ──
+
+var lot = await repository.GetParkingLotByIdAsync(DEFAULT_LOT_ID);
+if (lot is null)
+{
+    Console.WriteLine($"[ERROR] No se encontró el parqueadero '{DEFAULT_LOT_ID}' en la BD.");
+    return;
+}
+
+
+// ── 3. Bus de eventos en proceso ──
+
 IEventPublisher bus = new InProcessEventBus();
 
-// 3. Hardware: bridge (inbound) + dispatcher (outbound)
+
+// ── 4. Bridge serial con Arduino (opcional — continúa si no hay hardware) ──
+
 using var bridge = new ArduinoSerialBridge(DEFAULT_PORT_NAME, DEFAULT_BAUD_RATE, bus);
 using var dispatcher = new SerialCommandDispatcher(bridge);
 
-// 4. Caso de uso: lecturas -> dominio
+
+// ── 5. Crear sensores (uno por cada spot + sensor de puerta) para el menú ──
+
+var gateSensor = new Sensor<GateSensorReading>("SEN-GATE-01", "LPR");
+
+var spotSensors = new Dictionary<string, Sensor<SpotSensorReading>>();
+foreach (var s in lot.GetSpots())
+{
+    spotSensors[s.Id] = new Sensor<SpotSensorReading>($"SEN-SPOT-{s.Id}", "Ultrasonido");
+}
+
+
+// ── 6. Caso de uso: lecturas del sensor -> dominio ──
+// El mapeo incluye tanto los IDs del hardware Arduino (IR1) como los IDs
+// de los sensores del menú (SEN-SPOT-A1). Así, tanto las lecturas del Arduino
+// como las del menú disparan el mismo use case (HandleSensorReadingUseCase).
+
 var sensorToSpot = new Dictionary<string, string> { ["IR1"] = "A1" };
+foreach (var s in spotSensors.Values)
+    sensorToSpot[s.Id] = s.Id.Replace("SEN-SPOT-", "");
+
 var handleReading = new HandleSensorReadingUseCase(lot, sensorToSpot);
 bus.Subscribe<SensorReadingReceived>(handleReading.Handle);
 
-// 5. Handler: eventos de dominio -> comandos
+
+// ── 7. Handler: eventos de dominio -> comandos al actuador ──
+
 var spotToActuator = new Dictionary<string, string> { ["A1"] = "LED1" };
 var occupancyHandler = new SpotOccupancyChangedHandler(dispatcher, spotToActuator);
 
 foreach (var spot in lot.GetSpots())
     spot.OccupancyChanged += occupancyHandler.Handle;
 
-// 6. Reglas de capacidad / alertas (compatibilidad con flujo de puertas previo)
+
+// ── 7.1. Persistencia de cambios de ocupación (cualquier fuente: Arduino o menú) ──
+// Cuando un spot cambia de estado, persistimos el cambio en BD automáticamente.
+
+foreach (var spot in lot.GetSpots())
+{
+    spot.OccupancyChanged += evt =>
+    {
+        _ = repository.UpdateSpotStatusAsync(evt.SpotId, evt.IsOccupied);
+    };
+}
+
+
+// ── 8. Instanciar servicios de aplicación ──
+
 ICapacityService capacityService = new CapacityService(lot);
 IAlertService alertService = new AlertService();
 var gateController = new GateController(capacityService, alertService);
-_ = gateController;
 
-// 7. Arrancar
+
+// ── 9. Registrar puertas físicas ──
+
+gateController.RegisterGate(ENTRY_GATE_ID, new Gate(ENTRY_GATE_ID, GateType.ENTRY, ENTRY_GATE_PIN));
+gateController.RegisterGate(EXIT_GATE_ID, new Gate(EXIT_GATE_ID, GateType.EXIT, EXIT_GATE_PIN));
+
+
+// ── 10. Arrancar bridge ──
+
 bridge.StartListening();
 
-Console.WriteLine("╔══════════════════════════════════════════════════╗");
-Console.WriteLine("║                Smart Parking Lot                 ║");
-Console.WriteLine("╚══════════════════════════════════════════════════╝");
-Console.WriteLine($"Parqueadero : {lot.Name}");
-Console.WriteLine($"Modo        : {lot.Mode}");
-Console.WriteLine($"Espacios    : {lot.TotalSpots} totales | {lot.AvailableSpots} disponibles");
-Console.WriteLine("Flujo bidireccional OK. Ctrl+C para salir.");
 
-var done = new ManualResetEventSlim();
-Console.CancelKeyPress += (_, e) => { e.Cancel = true; done.Set(); };
-done.Wait();
+// ── 11. Ejecutar menú interactivo ──
+
+var menu = new ConsoleMenu(lot, gateController, capacityService, repository, bus, spotSensors, gateSensor);
+await menu.RunAsync();
