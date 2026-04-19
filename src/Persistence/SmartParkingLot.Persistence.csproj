@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>SmartParkingLot.Persistence</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\SmartParkingLot.Core.csproj" />
+  </ItemGroup>
+
+  <!-- SOLID - Inversión de Dependencias: Dapper es un micr ORM que permite SQL directo -->
+  <!-- SQLite es la base de datos embebida; System.Data.SQLite proporciona el adaptador ADO.NET -->
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.15" />
+    <PackageReference Include="System.Data.SQLite" Version="1.0.118.0" />
+  </ItemGroup>
+
+</Project>

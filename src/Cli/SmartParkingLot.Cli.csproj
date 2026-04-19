@@ -12,6 +12,7 @@
     <ProjectReference Include="..\Core\SmartParkingLot.Core.csproj" />
     <ProjectReference Include="..\Application\SmartParkingLot.Application.csproj" />
     <ProjectReference Include="..\Hardware\SmartParkingLot.Hardware.csproj" />
+    <ProjectReference Include="..\Persistence\SmartParkingLot.Persistence.csproj" />
   </ItemGroup>
 
 </Project>
