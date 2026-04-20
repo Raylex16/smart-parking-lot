@@ -110,14 +110,13 @@ public sealed class ParkingLotApp
         gateController.RegisterGate(EXIT_GATE_ID, new Gate(EXIT_GATE_ID, GateType.EXIT, EXIT_GATE_PIN));
 
 
-        // ── 10. Arrancar bridge ──
-
-        bridge.StartListening();
+        // ── 10. NO arrancar bridge automáticamente ──
+        // El bridge se iniciará solo cuando el usuario seleccione la opción de monitoreo (opción 8)
 
 
         // ── 11. Ejecutar menú interactivo ──
 
-        var menu = new ConsoleMenu(lot, gateController, capacityService, repository, bus, spotSensors, gateSensor);
+        var menu = new ConsoleMenu(lot, gateController, capacityService, repository, bus, spotSensors, gateSensor, bridge);
         await menu.RunAsync();
     }
 }

@@ -21,6 +21,7 @@ public class ConsoleMenu
     private readonly IEventPublisher _bus;
     private readonly Dictionary<string, Sensor<SpotSensorReading>> _spotSensors;
     private readonly Sensor<GateSensorReading> _gateSensor;
+    private readonly IArduinoReader _bridge;
 
     public ConsoleMenu(
         ParkingLot lot,
@@ -29,7 +30,8 @@ public class ConsoleMenu
         IParkingRepository repository,
         IEventPublisher bus,
         Dictionary<string, Sensor<SpotSensorReading>> spotSensors,
-        Sensor<GateSensorReading> gateSensor)
+        Sensor<GateSensorReading> gateSensor,
+        IArduinoReader bridge)
     {
         _lot = lot;
         _gateController = gateController;
@@ -38,6 +40,7 @@ public class ConsoleMenu
         _bus = bus;
         _spotSensors = spotSensors;
         _gateSensor = gateSensor;
+        _bridge = bridge;
     }
 
     public async Task RunAsync()
@@ -330,7 +333,10 @@ public class ConsoleMenu
     // ═══════════════════════════════════════════════════════════════════
     private void RunLiveMonitoring()
     {
-        Console.WriteLine("\nMonitoreo en tiempo real — presione cualquier tecla para salir.\n");
+        Console.WriteLine("\nIniciando monitoreo en tiempo real — presione cualquier tecla para salir.\n");
+        
+        // Iniciar escucha del Arduino solo cuando se selecciona esta opción
+        _bridge.StartListening();
 
         var lastState = new Dictionary<string, bool?>();
         foreach (var id in _spotSensors.Keys) lastState[id] = null;
@@ -356,6 +362,9 @@ public class ConsoleMenu
         }
 
         Console.ReadKey(intercept: true); // consume key
+        
+        // Detener escucha del Arduino cuando se sale del monitoreo
+        _bridge.StopListening();
         Console.WriteLine("\nMonitoreo detenido.");
     }
 }
