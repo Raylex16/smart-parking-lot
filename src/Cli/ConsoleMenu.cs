@@ -63,6 +63,7 @@ public class ConsoleMenu
                     case "6": await ShowSensorReadingsAsync(); break;
                     case "7": await ShowDeviceActionsAsync(); break;
                     case "8": RunLiveMonitoring(); break;
+                    case "9": await ShowSpotsFromDbAsync(); break;
                     case "0":
                         Console.WriteLine("Saliendo...");
                         return;
@@ -90,15 +91,15 @@ public class ConsoleMenu
         Console.WriteLine($"  Parqueadero : {_lot.Name} ({_lot.Id})");
         Console.WriteLine($"  Modo        : {_lot.Mode}");
         Console.WriteLine($"  Espacios    : {_lot.TotalSpots} totales | {_lot.AvailableSpots} disponibles");
-        Console.WriteLine("# -> No implementadas ");
-        Console.WriteLine("  1. # Solicitar entrada de vehículo");
-        Console.WriteLine("  2. # Solicitar salida de vehículo");
-        Console.WriteLine("  3. # Actualizar estado de un espacio (sensor manual)");
-        Console.WriteLine("  4. # Ver estado del parqueadero");
-        Console.WriteLine("  5. # Ver historial de un vehículo");
-        Console.WriteLine("  6.  Ver lecturas de un sensor");
+        Console.WriteLine("  1. Solicitar entrada de vehículo");
+        Console.WriteLine("  2. Solicitar salida de vehículo");
+        Console.WriteLine("  3. Actualizar estado de un espacio (sensor manual)");
+        Console.WriteLine("  4. Ver estado del parqueadero");
+        Console.WriteLine("  5. Ver historial de un vehículo");
+        Console.WriteLine("  6. Ver lecturas de un sensor");
         Console.WriteLine("  7. Ver acciones de un dispositivo");
         Console.WriteLine("  8. Monitoreo en tiempo real (Arduino)");
+        Console.WriteLine("  9. Ver estado de espacios (BD)");
         Console.WriteLine("  0. Salir");
     }
 
@@ -326,6 +327,30 @@ public class ConsoleMenu
         Console.WriteLine($"\nAcciones de '{deviceId}' ({actions.Count} registro(s)):");
         foreach (var a in actions)
             Console.WriteLine($"  [{a.Timestamp:yyyy-MM-dd HH:mm:ss}] {a.Action}  ({a.Id})");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Opción 9: Estado de espacios desde BD
+    // ═══════════════════════════════════════════════════════════════════
+    private async Task ShowSpotsFromDbAsync()
+    {
+        var spots = (await _repository.GetSpotsByLotIdAsync(_lot.Id)).ToList();
+
+        if (spots.Count == 0)
+        {
+            Console.WriteLine("No hay espacios registrados en la BD.");
+            return;
+        }
+
+        Console.WriteLine($"\nEspacios de '{_lot.Name}' en BD ({spots.Count} espacio(s)):");
+        Console.WriteLine($"  {"ID",-8} {"Dirección",-28} Estado");
+        Console.WriteLine($"  {new string('─', 50)}");
+
+        foreach (var s in spots)
+            Console.WriteLine($"  {s.Id,-8} {s.Address,-28} {(s.IsOccupied ? "OCUPADO" : "LIBRE")}");
+
+        var occupied = spots.Count(s => s.IsOccupied);
+        Console.WriteLine($"\n  Total: {spots.Count} | Ocupados: {occupied} | Libres: {spots.Count - occupied}");
     }
 
     // ═══════════════════════════════════════════════════════════════════
