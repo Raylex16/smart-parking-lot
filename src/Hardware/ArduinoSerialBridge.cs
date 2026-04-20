@@ -105,7 +105,6 @@ public class ArduinoSerialBridge : IArduinoReader
             return;
         }
 
-        Console.WriteLine($"[ArduinoSerialBridge] Linea ignorada: '{line}'");
     }
 
     public void WriteLine(string line)
