@@ -21,6 +21,7 @@ public class ConsoleMenu
     private readonly IEventPublisher _bus;
     private readonly Dictionary<string, Sensor<SpotSensorReading>> _spotSensors;
     private readonly Sensor<GateSensorReading> _gateSensor;
+    private readonly IArduinoReader _bridge;
 
     public ConsoleMenu(
         ParkingLot lot,
@@ -29,7 +30,8 @@ public class ConsoleMenu
         IParkingRepository repository,
         IEventPublisher bus,
         Dictionary<string, Sensor<SpotSensorReading>> spotSensors,
-        Sensor<GateSensorReading> gateSensor)
+        Sensor<GateSensorReading> gateSensor,
+        IArduinoReader bridge)
     {
         _lot = lot;
         _gateController = gateController;
@@ -38,6 +40,7 @@ public class ConsoleMenu
         _bus = bus;
         _spotSensors = spotSensors;
         _gateSensor = gateSensor;
+        _bridge = bridge;
     }
 
     public async Task RunAsync()
@@ -330,32 +333,28 @@ public class ConsoleMenu
     // ═══════════════════════════════════════════════════════════════════
     private void RunLiveMonitoring()
     {
-        Console.WriteLine("\nMonitoreo en tiempo real — presione cualquier tecla para salir.\n");
+        Console.WriteLine("\nMonitoreo en tiempo real — los logs de Arduino se mostrarán ahora. Presione cualquier tecla para salir.\n");
 
-        var lastState = new Dictionary<string, bool?>();
-        foreach (var id in _spotSensors.Keys) lastState[id] = null;
+        if (!_bridge.IsListening)
+        {
+            _bridge.StartListening();
+        }
+
+        if (!_bridge.IsListening)
+        {
+            Console.WriteLine("[Monitoreo] Arduino no disponible.");
+            return;
+        }
+
+        _bridge.ConsoleLoggingEnabled = true;
 
         while (!Console.KeyAvailable)
         {
-            foreach (var (spotId, sensor) in _spotSensors)
-            {
-                var snapshot = sensor.GetSnapshot();
-                if (snapshot is null) continue;
-
-                if (lastState[spotId] != snapshot.IsOccupied)
-                {
-                    lastState[spotId] = snapshot.IsOccupied;
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {spotId} -> {(snapshot.IsOccupied ? "OCUPADO" : "LIBRE")}");
-                    _capacityService.UpdateSpotState(snapshot);
-                    _ = _repository.LogSensorReadingAsync(sensor.Id, snapshot.IsOccupied ? "1" : "0", DateTime.Now);
-                    _ = _repository.UpdateSpotStatusAsync(spotId, snapshot.IsOccupied);
-                }
-            }
-
             Thread.Sleep(MONITOR_POLL_DELAY_MS);
         }
 
         Console.ReadKey(intercept: true); // consume key
+        _bridge.ConsoleLoggingEnabled = false;
         Console.WriteLine("\nMonitoreo detenido.");
     }
 }
