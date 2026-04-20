@@ -91,15 +91,16 @@ public class ConsoleMenu
         Console.WriteLine($"  Parqueadero : {_lot.Name} ({_lot.Id})");
         Console.WriteLine($"  Modo        : {_lot.Mode}");
         Console.WriteLine($"  Espacios    : {_lot.TotalSpots} totales | {_lot.AvailableSpots} disponibles");
-        Console.WriteLine("  1. Solicitar entrada de vehículo");
-        Console.WriteLine("  2. Solicitar salida de vehículo");
-        Console.WriteLine("  3. Actualizar estado de un espacio (sensor manual)");
+        Console.WriteLine("  # -> No implementado en esta demo");
+        Console.WriteLine("  1. # Solicitar entrada de vehículo");
+        Console.WriteLine("  2. # Solicitar salida de vehículo");
+        Console.WriteLine("  3. # Actualizar estado de un espacio (sensor manual)");
         Console.WriteLine("  4. Ver estado del parqueadero");
-        Console.WriteLine("  5. Ver historial de un vehículo");
+        Console.WriteLine("  5. # Ver historial de un vehículo");
         Console.WriteLine("  6. Ver lecturas de un sensor");
-        Console.WriteLine("  7. Ver acciones de un dispositivo");
+        Console.WriteLine("  7. # Ver acciones de un dispositivo");
         Console.WriteLine("  8. Monitoreo en tiempo real (Arduino)");
-        Console.WriteLine("  9. Ver estado de espacios (BD)");
+        Console.WriteLine("  9. Ver estado de espacios");
         Console.WriteLine("  0. Salir");
     }
 
