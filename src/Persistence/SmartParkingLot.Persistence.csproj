@@ -15,7 +15,7 @@
   <!-- SQLite es la base de datos embebida; System.Data.SQLite proporciona el adaptador ADO.NET -->
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.15" />
-    <PackageReference Include="System.Data.SQLite" Version="1.0.118.0" />
+    <PackageReference Include="System.Data.SQLite" Version="2.0.3" />
   </ItemGroup>
 
 </Project>
