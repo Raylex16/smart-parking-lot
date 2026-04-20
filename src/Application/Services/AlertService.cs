@@ -8,7 +8,13 @@ namespace SmartParkingLot.Application;
 public class AlertService : IAlertService
 {
     private readonly List<Alert> _alerts = [];
+    private readonly IParkingRepository? _repository;
     private int _alertCounter;
+
+    public AlertService(IParkingRepository? repository = null)
+    {
+        _repository = repository;
+    }
 
     public void GenerateAlert(SensorReading reading)
     {
@@ -24,6 +30,13 @@ public class AlertService : IAlertService
 
         var alert = new Alert(alertId, type, message);
         _alerts.Add(alert);
+        
+        // Persistir en BD si el repositorio está disponible (fire-and-forget)
+        if (_repository != null)
+        {
+            _ = _repository.LogAlertAsync(alertId, type, message, alert.Date);
+        }
+        
         alert.Notify();
     }
 

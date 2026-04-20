@@ -68,6 +68,7 @@ public class DatabaseInitializer
             VehiclePlate TEXT NOT NULL,
             RequestType TEXT NOT NULL,  -- 'ENTRY' o 'EXIT'
             LotId TEXT NOT NULL,
+            ReleasedSpotId TEXT,        -- Spot liberado en EXIT (rúbrica: Exit Control)
             Timestamp DATETIME NOT NULL,
             Approved BOOLEAN NOT NULL,
             CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -92,15 +93,27 @@ public class DatabaseInitializer
             CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
         );
 
+        -- Tabla: Alertas (Rúbrica - Full Capacity Alert: ID, Type, Message, Timestamp)
+        CREATE TABLE IF NOT EXISTS Alerts (
+            Id TEXT PRIMARY KEY,
+            Type TEXT NOT NULL,           -- 'CAPACITY', 'GATE', 'SPOT', etc.
+            Message TEXT NOT NULL,
+            Timestamp DATETIME NOT NULL,
+            CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+
         -- Índices para mejorar performance en búsquedas frecuentes
         CREATE INDEX IF NOT EXISTS IX_ParkingSpots_LotId ON ParkingSpots(LotId);
         CREATE INDEX IF NOT EXISTS IX_ParkingSpots_IsOccupied ON ParkingSpots(IsOccupied);
         CREATE INDEX IF NOT EXISTS IX_RequestLogs_VehiclePlate ON RequestLogs(VehiclePlate);
         CREATE INDEX IF NOT EXISTS IX_RequestLogs_LotId ON RequestLogs(LotId);
+        CREATE INDEX IF NOT EXISTS IX_RequestLogs_ReleasedSpotId ON RequestLogs(ReleasedSpotId);
         CREATE INDEX IF NOT EXISTS IX_SensorReadings_SensorId ON SensorReadings(SensorId);
         CREATE INDEX IF NOT EXISTS IX_SensorReadings_Timestamp ON SensorReadings(Timestamp);
         CREATE INDEX IF NOT EXISTS IX_DeviceActions_DeviceId ON DeviceActions(DeviceId);
         CREATE INDEX IF NOT EXISTS IX_DeviceActions_Timestamp ON DeviceActions(Timestamp);
+        CREATE INDEX IF NOT EXISTS IX_Alerts_Timestamp ON Alerts(Timestamp);
+        CREATE INDEX IF NOT EXISTS IX_Alerts_Type ON Alerts(Type);
         """;
 
         using var command = connection.CreateCommand();
