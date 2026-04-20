@@ -22,7 +22,7 @@ public sealed class ParkingLotApp
         var dbPath = Path.Combine(AppContext.BaseDirectory, DB_FOLDER_NAME, DB_FILE_NAME);
         Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
 
-        var connectionString = $"Data Source={dbPath};Version=3;";
+        var connectionString = $"Data Source={dbPath};";
 
         var initializer = new DatabaseInitializer(connectionString);
         await initializer.InitializeAsync();

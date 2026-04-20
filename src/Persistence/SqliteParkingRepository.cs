@@ -1,5 +1,5 @@
 using System.Data;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using Dapper;
 using SmartParkingLot.Core;
 using SmartParkingLot.Core.Interfaces;
@@ -331,7 +331,7 @@ public class SqliteParkingRepository : IParkingRepository
     // Helpers privados
     // ═══════════════════════════════════════════════════════════════════
 
-    private SQLiteConnection GetConnection() => new(_connectionString);
+    private SqliteConnection GetConnection() => new(_connectionString);
 
     // ─── DTOs para mapeo con Dapper ───
     private class ParkingLotDto

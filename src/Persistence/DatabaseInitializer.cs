@@ -1,4 +1,4 @@
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using SmartParkingLot.Core;
 
 namespace SmartParkingLot.Persistence;
@@ -22,7 +22,7 @@ public class DatabaseInitializer
     public async Task InitializeAsync()
     {
         // Crear conexión y asegurar que la BD existe
-        using var connection = new SQLiteConnection(_connectionString);
+        using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync();
 
         // Crear tablas
@@ -39,7 +39,7 @@ public class DatabaseInitializer
     }
 
     /// <summary>Crea el schema de las tablas.</summary>
-    private async Task CreateSchemasAsync(SQLiteConnection connection)
+    private async Task CreateSchemasAsync(SqliteConnection connection)
     {
         var createTablesSQL = """
         -- Tabla para lotes de estacionamiento
@@ -122,7 +122,7 @@ public class DatabaseInitializer
     }
 
     /// <summary>Verifica si la BD ya contiene datos.</summary>
-    private async Task<bool> HasDataAsync(SQLiteConnection connection)
+    private async Task<bool> HasDataAsync(SqliteConnection connection)
     {
         using var command = connection.CreateCommand();
         command.CommandText = "SELECT COUNT(*) FROM ParkingLots;";
@@ -131,7 +131,7 @@ public class DatabaseInitializer
     }
 
     /// <summary>Realiza el seeding inicial de datos (GRASP - Creator).</summary>
-    private async Task SeedDataAsync(SQLiteConnection connection)
+    private async Task SeedDataAsync(SqliteConnection connection)
     {
         using var transaction = connection.BeginTransaction();
 
