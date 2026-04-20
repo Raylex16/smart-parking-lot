@@ -110,9 +110,10 @@ public sealed class ParkingLotApp
         gateController.RegisterGate(EXIT_GATE_ID, new Gate(EXIT_GATE_ID, GateType.EXIT, EXIT_GATE_PIN));
 
 
-        // ── 10. NO arrancar bridge automáticamente ──
-        // El bridge se iniciará solo cuando el usuario seleccione la opción de monitoreo (opción 8)
-
+        // ── 10. Arrancar bridge en silencio para leer Arduino y persistir datos.
+        // Los mensajes de consola solo se habilitan cuando el usuario selecciona opción 8.
+        bridge.ConsoleLoggingEnabled = false;
+        bridge.StartListening();
 
         // ── 11. Ejecutar menú interactivo ──
 

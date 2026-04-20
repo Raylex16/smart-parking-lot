@@ -11,4 +11,7 @@ public interface IArduinoReader : IDisposable
 
     /// <summary>True si el loop de lectura está activo.</summary>
     bool IsListening { get; }
+
+    /// <summary>Controla si los mensajes del bridge se imprimen en consola.</summary>
+    bool ConsoleLoggingEnabled { get; set; }
 }

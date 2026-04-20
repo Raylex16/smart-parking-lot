@@ -333,38 +333,28 @@ public class ConsoleMenu
     // ═══════════════════════════════════════════════════════════════════
     private void RunLiveMonitoring()
     {
-        Console.WriteLine("\nIniciando monitoreo en tiempo real — presione cualquier tecla para salir.\n");
-        
-        // Iniciar escucha del Arduino solo cuando se selecciona esta opción
-        _bridge.StartListening();
+        Console.WriteLine("\nMonitoreo en tiempo real — los logs de Arduino se mostrarán ahora. Presione cualquier tecla para salir.\n");
 
-        var lastState = new Dictionary<string, bool?>();
-        foreach (var id in _spotSensors.Keys) lastState[id] = null;
+        if (!_bridge.IsListening)
+        {
+            _bridge.StartListening();
+        }
+
+        if (!_bridge.IsListening)
+        {
+            Console.WriteLine("[Monitoreo] Arduino no disponible.");
+            return;
+        }
+
+        _bridge.ConsoleLoggingEnabled = true;
 
         while (!Console.KeyAvailable)
         {
-            foreach (var (spotId, sensor) in _spotSensors)
-            {
-                var snapshot = sensor.GetSnapshot();
-                if (snapshot is null) continue;
-
-                if (lastState[spotId] != snapshot.IsOccupied)
-                {
-                    lastState[spotId] = snapshot.IsOccupied;
-                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {spotId} -> {(snapshot.IsOccupied ? "OCUPADO" : "LIBRE")}");
-                    _capacityService.UpdateSpotState(snapshot);
-                    _ = _repository.LogSensorReadingAsync(sensor.Id, snapshot.IsOccupied ? "1" : "0", DateTime.Now);
-                    _ = _repository.UpdateSpotStatusAsync(spotId, snapshot.IsOccupied);
-                }
-            }
-
             Thread.Sleep(MONITOR_POLL_DELAY_MS);
         }
 
         Console.ReadKey(intercept: true); // consume key
-        
-        // Detener escucha del Arduino cuando se sale del monitoreo
-        _bridge.StopListening();
+        _bridge.ConsoleLoggingEnabled = false;
         Console.WriteLine("\nMonitoreo detenido.");
     }
 }
