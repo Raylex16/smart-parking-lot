@@ -15,6 +15,7 @@ void setup() {
   for (int i = 0; i < SENSOR_COUNT; i++) {
     pinMode(IR_PINS[i], INPUT);
     pinMode(LED_PINS[i], OUTPUT);
+    digitalWrite(LED_PINS[i], HIGH); // inicia encendido = spot libre
   }
   Serial.begin(9600);
 }

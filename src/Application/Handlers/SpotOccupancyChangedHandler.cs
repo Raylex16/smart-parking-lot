@@ -24,6 +24,6 @@ public sealed class SpotOccupancyChangedHandler
             CommandId: Guid.NewGuid().ToString("N")[..8],
             ActuatorId: actuatorId,
             Action: "SET",
-            Payload: evt.IsOccupied ? "1" : "0"));
+            Payload: evt.IsOccupied ? "0" : "1"));
     }
 }
