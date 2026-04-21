@@ -123,7 +123,7 @@ public class ArduinoSerialBridge : IArduinoReader
             return;
         }
 
-        if (ConsoleLoggingEnabled)
+        if (ConsoleLoggingEnabled)     
             Console.WriteLine($"[ArduinoSerialBridge] Linea ignorada: '{line}'");
     }
 

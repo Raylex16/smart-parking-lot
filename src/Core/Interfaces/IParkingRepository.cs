@@ -31,6 +31,13 @@ public interface IParkingRepository
     /// <summary>Actualiza el estado (disponibilidad y ocupación) de un espacio.</summary>
     Task<bool> UpdateSpotStatusAsync(string spotId, bool isOccupied, CancellationToken ct = default);
 
+    /// <summary>
+    /// Inserta el espacio si no existe (idempotente). Permite que hardware.json
+    /// sea la fuente de verdad: agregar un sensor registra el spot automáticamente.
+    /// </summary>
+    Task EnsureSpotExistsAsync(string spotId, string lotId, string address, string type, string floor,
+        CancellationToken ct = default);
+
     // ── Operaciones de auditoría ──
 
     /// <summary>Registra un Request (entrada o salida) para auditoría.</summary>

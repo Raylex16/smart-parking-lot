@@ -101,6 +101,22 @@ public class SqliteParkingRepository : IParkingRepository
     public Task<IEnumerable<ParkingSpot>> GetOccupiedSpotsAsync(string lotId, CancellationToken ct = default)
         => throw new NotImplementedException();
 
+    public async Task EnsureSpotExistsAsync(string spotId, string lotId, string address, string type, string floor,
+        CancellationToken ct = default)
+    {
+        using var connection = GetConnection();
+        await connection.OpenAsync(ct);
+
+        var sql = """
+            INSERT OR IGNORE INTO ParkingSpots (Id, LotId, Address, Type, Floor, IsOccupied)
+            VALUES (@Id, @LotId, @Address, @Type, @Floor, 0);
+        """;
+        await connection.ExecuteAsync(
+            new CommandDefinition(sql,
+                new { Id = spotId, LotId = lotId, Address = address, Type = type, Floor = floor },
+                cancellationToken: ct));
+    }
+
     public async Task<bool> UpdateSpotStatusAsync(string spotId, bool isOccupied, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(spotId);

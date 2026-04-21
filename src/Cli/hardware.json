@@ -1,0 +1,30 @@
+{
+  "port": "COM6",
+  "baudRate": 9600,
+  "sensors": [
+    {
+      "sensorId": "IR1",
+      "spotId": "A1",
+      "actuatorId": "LED1",
+      "address": "Zona-A Fila-1",
+      "type": "Estándar",
+      "floor": "Planta Baja"
+    },
+    {
+      "sensorId": "IR2",
+      "spotId": "A2",
+      "actuatorId": "LED2",
+      "address": "Zona-A Fila-2",
+      "type": "Estándar",
+      "floor": "Planta Baja"
+    },
+    {
+      "sensorId": "IR3",
+      "spotId": "A3",
+      "actuatorId": "LED3",
+      "address": "Zona-A Fila-3",
+      "type": "Estándar",
+      "floor": "Planta Baja"
+    }
+  ]
+}

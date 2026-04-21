@@ -157,7 +157,7 @@ public class DatabaseInitializer
             {
                 ("A1", "Zona-A Fila-1", "Estándar", "Planta Baja"),
                 ("A2", "Zona-A Fila-2", "Estándar", "Planta Baja"),
-                ("B1", "Zona-B Fila-1", "Compacto", "Nivel 1"),
+                ("A3", "Zona-A Fila-3", "Estándar", "Planta Baja"),
             };
 
             foreach (var (spotId, address, type, floor) in spots)

@@ -15,4 +15,10 @@
     <ProjectReference Include="..\Persistence\SmartParkingLot.Persistence.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="hardware.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

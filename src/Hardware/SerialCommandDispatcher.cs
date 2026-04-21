@@ -10,6 +10,13 @@ public sealed class SerialCommandDispatcher : ICommandDispatcher, IDisposable
     private readonly BlockingCollection<ActuatorCommand> _queue = new();
     private readonly Thread _writer;
     private volatile bool _running = true;
+    private volatile bool _consoleLoggingEnabled;
+
+    public bool ConsoleLoggingEnabled
+    {
+        get => _consoleLoggingEnabled;
+        set => _consoleLoggingEnabled = value;
+    }
 
     public SerialCommandDispatcher(ArduinoSerialBridge bridge)
     {
@@ -28,11 +35,13 @@ public sealed class SerialCommandDispatcher : ICommandDispatcher, IDisposable
             try
             {
                 _bridge.WriteLine(SerialProtocol.SerializeCommand(cmd));
-                Console.WriteLine($"[Dispatcher] -> {cmd.CommandId} {cmd.ActuatorId} {cmd.Action}:{cmd.Payload}");
+                if (_consoleLoggingEnabled)
+                    Console.WriteLine($"[Dispatcher] -> {cmd.CommandId} {cmd.ActuatorId} {cmd.Action}:{cmd.Payload}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Dispatcher] Error enviando {cmd.CommandId}: {ex.Message}");
+                if (_consoleLoggingEnabled)
+                    Console.WriteLine($"[Dispatcher] Error enviando {cmd.CommandId}: {ex.Message}");
             }
         }
     }

@@ -18,7 +18,12 @@ public sealed class ParkingLotApp
 {
     public async Task RunAsync()
     {
-        // ── 1. Inicializar persistencia ──
+        // ── 1. Cargar configuración de hardware ──
+        var configPath = Path.Combine(AppContext.BaseDirectory, "hardware.json");
+        var hwConfig = HardwareConfig.Load(configPath);
+
+
+        // ── 2. Inicializar persistencia ──
         var dbPath = Path.Combine(AppContext.BaseDirectory, DB_FOLDER_NAME, DB_FILE_NAME);
         Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
 
@@ -29,8 +34,15 @@ public sealed class ParkingLotApp
 
         IParkingRepository repository = new SqliteParkingRepository(connectionString);
 
+        // Sincroniza los spots definidos en hardware.json con la BD (idempotente).
+        // Agregar un sensor al JSON registra el spot automáticamente en el siguiente arranque.
+        foreach (var mapping in hwConfig.Sensors)
+            await repository.EnsureSpotExistsAsync(
+                mapping.SpotId, DEFAULT_LOT_ID,
+                mapping.Address, mapping.Type, mapping.Floor);
 
-        // ── 2. Cargar el parqueadero desde BD (estado persistente) ──
+
+        // ── 3. Cargar el parqueadero desde BD (estado persistente) ──
         var lot = await repository.GetParkingLotByIdAsync(DEFAULT_LOT_ID);
         if (lot is null)
         {
@@ -39,12 +51,12 @@ public sealed class ParkingLotApp
         }
 
 
-        // ── 3. Bus de eventos en proceso ──
+        // ── 4. Bus de eventos en proceso ──
         IEventPublisher bus = new InProcessEventBus();
 
 
-        // ── 4. Bridge serial con Arduino (opcional — continúa si no hay hardware) ──
-        using var bridge = new ArduinoSerialBridge(DEFAULT_PORT_NAME, DEFAULT_BAUD_RATE, bus);
+        // ── 5. Bridge serial con Arduino (puerto y baudRate vienen de hardware.json) ──
+        using var bridge = new ArduinoSerialBridge(hwConfig.Port, hwConfig.BaudRate, bus);
         using var dispatcher = new SerialCommandDispatcher(bridge);
 
 
@@ -59,10 +71,10 @@ public sealed class ParkingLotApp
 
 
         // ── 6. Caso de uso: lecturas del sensor -> dominio ──
-        // El mapeo incluye tanto los IDs del hardware Arduino (IR1) como los IDs
-        // de los sensores del menú (SEN-SPOT-A1). Así, tanto las lecturas del Arduino
-        // como las del menú disparan el mismo use case (HandleSensorReadingUseCase).
-        var sensorToSpot = new Dictionary<string, string> { ["IR1"] = "A1" };
+        // sensorToSpot combina los IDs de hardware (IR1…) definidos en hardware.json
+        // y los IDs de sensores de menú (SEN-SPOT-A1…) para que ambas fuentes disparen
+        // el mismo use case.
+        var sensorToSpot = new Dictionary<string, string>(hwConfig.BuildSensorToSpot());
         foreach (var s in spotSensors.Values)
             sensorToSpot[s.Id] = s.Id.Replace("SEN-SPOT-", "");
 
@@ -71,7 +83,7 @@ public sealed class ParkingLotApp
 
 
         // ── 7. Handler: eventos de dominio -> comandos al actuador ──
-        var spotToActuator = new Dictionary<string, string> { ["A1"] = "LED1" };
+        var spotToActuator = hwConfig.BuildSpotToActuator();
         var occupancyHandler = new SpotOccupancyChangedHandler(dispatcher, spotToActuator);
 
         foreach (var spot in lot.GetSpots())
@@ -107,7 +119,7 @@ public sealed class ParkingLotApp
 
         // ── 11. Ejecutar menú interactivo ──
 
-        var menu = new ConsoleMenu(lot, gateController, capacityService, repository, bus, spotSensors, gateSensor, bridge);
+        var menu = new ConsoleMenu(lot, gateController, capacityService, repository, bus, spotSensors, gateSensor, bridge, dispatcher);
         await menu.RunAsync();
     }
 }

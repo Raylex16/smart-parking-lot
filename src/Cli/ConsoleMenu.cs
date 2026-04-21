@@ -22,6 +22,7 @@ public class ConsoleMenu
     private readonly Dictionary<string, Sensor<SpotSensorReading>> _spotSensors;
     private readonly Sensor<GateSensorReading> _gateSensor;
     private readonly IArduinoReader _bridge;
+    private readonly SerialCommandDispatcher _dispatcher;
 
     public ConsoleMenu(
         ParkingLot lot,
@@ -31,7 +32,8 @@ public class ConsoleMenu
         IEventPublisher bus,
         Dictionary<string, Sensor<SpotSensorReading>> spotSensors,
         Sensor<GateSensorReading> gateSensor,
-        IArduinoReader bridge)
+        IArduinoReader bridge,
+        SerialCommandDispatcher dispatcher)
     {
         _lot = lot;
         _gateController = gateController;
@@ -41,6 +43,7 @@ public class ConsoleMenu
         _spotSensors = spotSensors;
         _gateSensor = gateSensor;
         _bridge = bridge;
+        _dispatcher = dispatcher;
     }
 
     public async Task RunAsync()
@@ -373,6 +376,7 @@ public class ConsoleMenu
         }
 
         _bridge.ConsoleLoggingEnabled = true;
+        _dispatcher.ConsoleLoggingEnabled = true;
 
         while (!Console.KeyAvailable)
         {
@@ -381,6 +385,7 @@ public class ConsoleMenu
 
         Console.ReadKey(intercept: true); // consume key
         _bridge.ConsoleLoggingEnabled = false;
+        _dispatcher.ConsoleLoggingEnabled = false;
         Console.WriteLine("\nMonitoreo detenido.");
     }
 }
