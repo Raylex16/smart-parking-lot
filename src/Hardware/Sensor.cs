@@ -3,8 +3,6 @@ using SmartParkingLot.Core.Interfaces;
 
 namespace SmartParkingLot.Hardware;
 
-// GRASP - Polymorphism + Information Expert: Sensor genérico que captura lecturas tipadas
-// La simulación de hardware se hace en CaptureReading(), similar a Gate.ExecCommand()
 public class Sensor<T> : ISensor, ISensorCapture<T> where T : SensorReading
 {
     private readonly string _id;
@@ -21,7 +19,6 @@ public class Sensor<T> : ISensor, ISensorCapture<T> where T : SensorReading
 
     public float ReadValue()
     {
-        // Simulación: retorna el valor de la última lectura capturada
         if (_snapshot is null)
         {
             Console.WriteLine($"[Sensor {_id}] Sin lecturas registradas, retornando 0");
@@ -36,7 +33,6 @@ public class Sensor<T> : ISensor, ISensorCapture<T> where T : SensorReading
 
     public T CaptureReading(T reading)
     {
-        // Simulación del hardware: en un sistema real aquí se leería el pin físico
         Console.WriteLine($"[Sensor {_id}] Captura registrada — {reading}");
         _snapshot = reading;
         return reading;

@@ -6,12 +6,6 @@ using SmartParkingLot.Hardware;
 
 namespace SmartParkingLot.Cli;
 
-/// <summary>
-/// GRASP - Controller: Orquesta la interacción con el usuario y delega a los servicios
-/// de aplicación (GateController, CapacityService) y al repositorio de persistencia.
-/// GRASP - Low Coupling: Depende de abstracciones (ICapacityService, IParkingRepository,
-/// IEventPublisher).
-/// </summary>
 public class ConsoleMenu
 {
     private readonly ParkingLot _lot;
@@ -107,9 +101,6 @@ public class ConsoleMenu
         Console.WriteLine("  0. Salir");
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // Opción 1: Solicitar entrada
-    // ═══════════════════════════════════════════════════════════════════
     private async Task HandleEntryAsync()
     {
         Console.Write("Placa del vehículo: ");
@@ -120,28 +111,23 @@ public class ConsoleMenu
             return;
         }
 
-        // Snapshot para detectar qué spot se ocupa
         var occupiedBefore = _lot.GetSpots()
             .Where(s => s.IsOccupied)
             .Select(s => s.Id)
             .ToHashSet();
 
-        // Simulación del sensor de puerta (cámara LPR detecta placa)
         var gateReading = new GateSensorReading(plate, ENTRY_GATE_ID);
         _gateSensor.CaptureReading(gateReading);
         await _repository.LogSensorReadingAsync(_gateSensor.Id, $"plate:{plate}", DateTime.Now);
 
-        // Procesar la solicitud via GateController (GRASP - Controller)
         var request = new EntryRequest(plate) { GateId = ENTRY_GATE_ID };
         _gateController.HandleRequest(request);
 
-        // Persistir la solicitud en RequestLogs
         var requestId = $"REQ-{Guid.NewGuid().ToString("N")[..8]}";
         await _repository.LogRequestAsync(requestId, plate, "ENTRY", _lot.Id, request.Timestamp, request.Approved);
 
         if (request.Approved)
         {
-            // Persistir el cambio de estado del spot recién ocupado
             var newlyOccupied = _lot.GetSpots()
                 .FirstOrDefault(s => s.IsOccupied && !occupiedBefore.Contains(s.Id));
 
@@ -150,16 +136,12 @@ public class ConsoleMenu
                 await _repository.UpdateSpotStatusAsync(newlyOccupied.Id, true);
             }
 
-            // Registrar acción del dispositivo (puerta abierta)
             await _repository.LogDeviceActionAsync($"GATE-{ENTRY_GATE_ID}", "OPEN", DateTime.Now);
         }
 
         Console.WriteLine($"\n[Resultado] {(request.Approved ? "CONCEDIDO ✓" : "DENEGADO ✗")} | Disponibles: {_lot.AvailableSpots}");
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // Opción 2: Solicitar salida
-    // ═══════════════════════════════════════════════════════════════════
     private async Task HandleExitAsync()
     {
         Console.Write("Placa del vehículo: ");
@@ -181,11 +163,6 @@ public class ConsoleMenu
         Console.WriteLine("[Nota] La liberación del spot la detecta el sensor (use opción 3).");
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // Opción 3: Actualizar estado de un espacio (sensor manual)
-    // Publica SensorReadingReceived en el bus → ejecuta HandleSensorReadingUseCase
-    // → dispara Spot.OccupancyChanged → handlers persisten spot_status + LED
-    // ═══════════════════════════════════════════════════════════════════
     private async Task HandleManualSpotReadingAsync()
     {
         Console.WriteLine("Espacios disponibles:");
@@ -210,18 +187,12 @@ public class ConsoleMenu
         var answer = Console.ReadLine()?.Trim().ToLowerInvariant();
         var isOccupied = answer == "s" || answer == "si" || answer == "sí" || answer == "y" || answer == "yes";
 
-        // 1) Captura local del snapshot del sensor (simulación hardware).
         var reading = new SpotSensorReading(spotId, isOccupied);
         sensor.CaptureReading(reading);
 
-        // 2) Persistir la lectura cruda para auditoría (rúbrica: "valor + timestamp").
         var rawValue = isOccupied ? "1" : "0";
         await _repository.LogSensorReadingAsync(sensor.Id, rawValue, DateTime.Now);
 
-        // 3) Publicar el evento en el bus. Esto dispara:
-        //    - HandleSensorReadingUseCase (aplica la ocupación al dominio)
-        //    - SpotOccupancyChangedHandler (envía comandos al actuador / LED)
-        //    - el subscriber de persistencia registrado en Program.cs (UpdateSpotStatusAsync)
         _bus.Publish(new SensorReadingReceived(
             SensorId: sensor.Id,
             SensorType: sensor.GetSensorType(),
@@ -231,9 +202,6 @@ public class ConsoleMenu
         Console.WriteLine($"\n[Resultado] Evento publicado — Espacio '{spotId}' → {(isOccupied ? "OCUPADO" : "LIBRE")}.");
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // Opción 4: Estado del parqueadero (en memoria)
-    // ═══════════════════════════════════════════════════════════════════
     private void ShowParkingStatus()
     {
         Console.WriteLine($"\nEstado de '{_lot.Name}' ({_lot.Id})");
@@ -242,9 +210,6 @@ public class ConsoleMenu
             Console.WriteLine($"  {spot}");
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // Opción 5: Historial de un vehículo (lee desde BD)
-    // ═══════════════════════════════════════════════════════════════════
     private async Task ShowVehicleHistoryAsync()
     {
         Console.Write("Placa del vehículo: ");
@@ -272,9 +237,6 @@ public class ConsoleMenu
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // Opción 6: Lecturas de un sensor (lee desde BD)
-    // ═══════════════════════════════════════════════════════════════════
     private async Task ShowSensorReadingsAsync()
     {
         Console.WriteLine("Sensores conocidos:");
@@ -303,9 +265,6 @@ public class ConsoleMenu
             Console.WriteLine($"  [{r.Timestamp:yyyy-MM-dd HH:mm:ss}] Valor: {r.Value}  ({r.Id})");
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // Opción 7: Acciones de un dispositivo (lee desde BD)
-    // ═══════════════════════════════════════════════════════════════════
     private async Task ShowDeviceActionsAsync()
     {
         Console.WriteLine("Dispositivos conocidos:");
@@ -333,9 +292,6 @@ public class ConsoleMenu
             Console.WriteLine($"  [{a.Timestamp:yyyy-MM-dd HH:mm:ss}] {a.Action}  ({a.Id})");
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // Opción 9: Estado de espacios desde BD
-    // ═══════════════════════════════════════════════════════════════════
     private async Task ShowSpotsFromDbAsync()
     {
         var spots = (await _repository.GetSpotsByLotIdAsync(_lot.Id)).ToList();
@@ -357,9 +313,6 @@ public class ConsoleMenu
         Console.WriteLine($"\n  Total: {spots.Count} | Ocupados: {occupied} | Libres: {spots.Count - occupied}");
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // Opción 8: Monitoreo en tiempo real (Arduino)
-    // ═══════════════════════════════════════════════════════════════════
     private void RunLiveMonitoring()
     {
         Console.WriteLine("\nMonitoreo en tiempo real — los logs de Arduino se mostrarán ahora. Presione cualquier tecla para salir.\n");
@@ -383,7 +336,7 @@ public class ConsoleMenu
             Thread.Sleep(MONITOR_POLL_DELAY_MS);
         }
 
-        Console.ReadKey(intercept: true); // consume key
+        Console.ReadKey(intercept: true);
         _bridge.ConsoleLoggingEnabled = false;
         _dispatcher.ConsoleLoggingEnabled = false;
         Console.WriteLine("\nMonitoreo detenido.");

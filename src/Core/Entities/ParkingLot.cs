@@ -19,14 +19,11 @@ public class ParkingLot
         _spots = [];
     }
 
-    // GRASP - Information Expert: ParkingLot es quien conoce y puede cambiar su propio modo
     public void SetMode(ParkingMode mode)
     {
         Mode = mode;
         Console.WriteLine($"[ParkingLot] Modo cambiado a: {mode}");
     }
-
-    // GRASP - Information Expert: Sabe si está lleno porque posee la lista de spots
 
     public void AddSpot(ParkingSpot spot)
     {

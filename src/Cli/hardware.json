@@ -1,5 +1,5 @@
 {
-  "port": "COM6",
+  "port": "COM5",
   "baudRate": 9600,
   "sensors": [
     {

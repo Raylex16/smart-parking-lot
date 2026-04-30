@@ -6,16 +6,6 @@ using SmartParkingLot.Core.Interfaces;
 
 namespace SmartParkingLot.Persistence;
 
-/// <summary>
-/// SOLID - Dependency Inversion Principle (DIP):
-/// Implementación concreta de IParkingRepository usando Dapper + SQLite.
-/// Los consumidores dependen de IParkingRepository, no de esta clase.
-/// 
-/// GRASP - Low Coupling: Encapsula toda la complejidad SQL y la comunicación con BD.
-/// La lógica de dominio no conoce detalles de persistencia.
-/// 
-/// Patrón: Repository — Actúa como una colección en memoria de entidades.
-/// </summary>
 public class SqliteParkingRepository : IParkingRepository
 {
     private readonly string _connectionString;
@@ -25,10 +15,6 @@ public class SqliteParkingRepository : IParkingRepository
         _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // Operaciones sobre ParkingLot
-    // ═══════════════════════════════════════════════════════════════════
-
     public async Task<ParkingLot?> GetParkingLotByIdAsync(string lotId, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(lotId);
@@ -36,38 +22,30 @@ public class SqliteParkingRepository : IParkingRepository
         using var connection = GetConnection();
         await connection.OpenAsync(ct);
 
-        // Obtener el lote
         var sql = "SELECT Id, Name, Mode FROM ParkingLots WHERE Id = @LotId;";
         var lotDto = await connection.QueryFirstOrDefaultAsync<ParkingLotDto>(
             new CommandDefinition(sql, new { LotId = lotId }, cancellationToken: ct));
 
         if (lotDto is null) return null;
 
-        // Obtener todos sus espacios
         var spotsSql = "SELECT Id, Address, Type, Floor, IsOccupied FROM ParkingSpots WHERE LotId = @LotId;";
         var spotsDto = await connection.QueryAsync<ParkingSpotDto>(
             new CommandDefinition(spotsSql, new { LotId = lotId }, cancellationToken: ct));
 
-        // Reconstruir agregado: ParkingLot + ParkingSpots (GRASP - Information Expert)
         var lot = new ParkingLot(lotDto.Id, lotDto.Name, Enum.Parse<ParkingMode>(lotDto.Mode));
 
         foreach (var spotDto in spotsDto)
         {
             var spot = new ParkingSpot(spotDto.Id, spotDto.Address, spotDto.Type, spotDto.Floor);
-            // Si estaba ocupado en BD, restaurar estado
             if (spotDto.IsOccupied == 1)
             {
-                try { spot.Occupy(); } catch { /* Ignorar si ya está ocupado */ }
+                try { spot.Occupy(); } catch { }
             }
             lot.AddSpot(spot);
         }
 
         return lot;
     }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // Operaciones sobre ParkingSpot
-    // ═══════════════════════════════════════════════════════════════════
 
     public async Task<IEnumerable<ParkingSpot>> GetSpotsByLotIdAsync(string lotId, CancellationToken ct = default)
     {
@@ -125,7 +103,7 @@ public class SqliteParkingRepository : IParkingRepository
         await connection.OpenAsync(ct);
 
         var sql = """
-            UPDATE ParkingSpots 
+            UPDATE ParkingSpots
             SET IsOccupied = @IsOccupied
             WHERE Id = @SpotId;
         """;
@@ -150,10 +128,6 @@ public class SqliteParkingRepository : IParkingRepository
 
         return result > 0;
     }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // Operaciones de auditoría: RequestLogs
-    // ═══════════════════════════════════════════════════════════════════
 
     public async Task<bool> LogRequestAsync(string requestId, string vehiclePlate, string requestType,
         string lotId, DateTime timestamp, bool approved, string? releasedSpotId = null, CancellationToken ct = default)
@@ -209,11 +183,7 @@ public class SqliteParkingRepository : IParkingRepository
         ).ToList();
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // Lecturas de Sensores (Rúbrica)
-    // ═══════════════════════════════════════════════════════════════════
-
-    public async Task<bool> LogSensorReadingAsync(string sensorId, string value, 
+    public async Task<bool> LogSensorReadingAsync(string sensorId, string value,
         DateTime timestamp, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(sensorId);
@@ -240,7 +210,7 @@ public class SqliteParkingRepository : IParkingRepository
         return result > 0;
     }
 
-    public async Task<IEnumerable<(string Id, string SensorId, string Value, DateTime Timestamp)>> 
+    public async Task<IEnumerable<(string Id, string SensorId, string Value, DateTime Timestamp)>>
         GetSensorReadingsAsync(string sensorId, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(sensorId);
@@ -260,11 +230,7 @@ public class SqliteParkingRepository : IParkingRepository
         return records;
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // Acciones de Dispositivos
-    // ═══════════════════════════════════════════════════════════════════
-
-    public async Task<bool> LogDeviceActionAsync(string deviceId, string action, 
+    public async Task<bool> LogDeviceActionAsync(string deviceId, string action,
         DateTime timestamp, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(deviceId);
@@ -291,7 +257,7 @@ public class SqliteParkingRepository : IParkingRepository
         return result > 0;
     }
 
-    public async Task<IEnumerable<(string Id, string DeviceId, string Action, DateTime Timestamp)>> 
+    public async Task<IEnumerable<(string Id, string DeviceId, string Action, DateTime Timestamp)>>
         GetDeviceActionsAsync(string deviceId, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(deviceId);
@@ -310,10 +276,6 @@ public class SqliteParkingRepository : IParkingRepository
 
         return records;
     }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // Alertas
-    // ═══════════════════════════════════════════════════════════════════
 
     public async Task<bool> LogAlertAsync(string alertId, string type, string message,
         DateTime timestamp, CancellationToken ct = default)
@@ -343,13 +305,8 @@ public class SqliteParkingRepository : IParkingRepository
         return result > 0;
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    // Helpers privados
-    // ═══════════════════════════════════════════════════════════════════
-
     private SqliteConnection GetConnection() => new(_connectionString);
 
-    // ─── DTOs para mapeo con Dapper ───
     private class ParkingLotDto
     {
         public string Id { get; set; } = string.Empty;
@@ -374,6 +331,4 @@ public class SqliteParkingRepository : IParkingRepository
         public DateTime Timestamp { get; set; }
         public int Approved { get; set; }
     }
-
-
 }

@@ -1,6 +1,5 @@
 namespace SmartParkingLot.Core;
 
-// GRASP - Information Expert: La alerta conoce su contenido y sabe cómo notificarse
 public class Alert
 {
     public string Id { get; }
@@ -18,7 +17,6 @@ public class Alert
 
     public void Notify()
     {
-        // Simulación: en un sistema real se enviaría a un canal de notificaciones
         Console.WriteLine($"[Alert {Id}] [{Type}] {Message} (Fecha: {Date:yyyy-MM-dd HH:mm:ss})");
     }
 

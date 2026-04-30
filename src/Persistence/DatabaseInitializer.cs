@@ -3,12 +3,6 @@ using SmartParkingLot.Core;
 
 namespace SmartParkingLot.Persistence;
 
-/// <summary>
-/// GRASP - Pure Fabrication: Clase artificial que no es parte del dominio,
-/// responsable únicamente de inicializar la base de datos SQLite.
-/// 
-/// Encapsula la lógica de creación de schema y seeding programático.
-/// </summary>
 public class DatabaseInitializer
 {
     private readonly string _connectionString;
@@ -18,17 +12,13 @@ public class DatabaseInitializer
         _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
     }
 
-    /// <summary>Inicializa la base de datos: crea schema y ejecuta seeding si es necesario.</summary>
     public async Task InitializeAsync()
     {
-        // Crear conexión y asegurar que la BD existe
         using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync();
 
-        // Crear tablas
         await CreateSchemasAsync(connection);
 
-        // Verificar si hay datos; si no, hacer seeding
         var hasData = await HasDataAsync(connection);
         if (!hasData)
         {
@@ -38,11 +28,9 @@ public class DatabaseInitializer
         connection.Close();
     }
 
-    /// <summary>Crea el schema de las tablas.</summary>
     private async Task CreateSchemasAsync(SqliteConnection connection)
     {
         var createTablesSQL = """
-        -- Tabla para lotes de estacionamiento
         CREATE TABLE IF NOT EXISTS ParkingLots (
             Id TEXT PRIMARY KEY,
             Name TEXT NOT NULL,
@@ -50,7 +38,6 @@ public class DatabaseInitializer
             CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
         );
 
-        -- Tabla para espacios de estacionamiento
         CREATE TABLE IF NOT EXISTS ParkingSpots (
             Id TEXT PRIMARY KEY,
             LotId TEXT NOT NULL,
@@ -62,47 +49,42 @@ public class DatabaseInitializer
             FOREIGN KEY (LotId) REFERENCES ParkingLots(Id) ON DELETE CASCADE
         );
 
-        -- Tabla de auditoría: historial de requests (entrada/salida)
         CREATE TABLE IF NOT EXISTS RequestLogs (
             Id TEXT PRIMARY KEY,
             VehiclePlate TEXT NOT NULL,
-            RequestType TEXT NOT NULL,  -- 'ENTRY' o 'EXIT'
+            RequestType TEXT NOT NULL,
             LotId TEXT NOT NULL,
-            ReleasedSpotId TEXT,        -- Spot liberado en EXIT (rúbrica: Exit Control)
+            ReleasedSpotId TEXT,
             Timestamp DATETIME NOT NULL,
             Approved BOOLEAN NOT NULL,
             CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (LotId) REFERENCES ParkingLots(Id) ON DELETE CASCADE
         );
 
-        -- Tabla: Lecturas de sensores (Rúbrica - Valor + Timestamp)
         CREATE TABLE IF NOT EXISTS SensorReadings (
             Id TEXT PRIMARY KEY,
             SensorId TEXT NOT NULL,
-            Value TEXT NOT NULL,  -- Valor leído (ej: "true", "distance:15cm", "plate:VH-001")
+            Value TEXT NOT NULL,
             Timestamp DATETIME NOT NULL,
             CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
         );
 
-        -- Tabla: Acciones de dispositivos (Rúbrica - LED ON/OFF, GATE, etc.)
         CREATE TABLE IF NOT EXISTS DeviceActions (
             Id TEXT PRIMARY KEY,
-            DeviceId TEXT NOT NULL,  -- Ej: 'LED_1', 'GATE_G-01', 'ACTUATOR_1'
-            Action TEXT NOT NULL,    -- 'ON', 'OFF', 'OPEN_90deg', etc.
+            DeviceId TEXT NOT NULL,
+            Action TEXT NOT NULL,
             Timestamp DATETIME NOT NULL,
             CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
         );
 
-        -- Tabla: Alertas (Rúbrica - Full Capacity Alert: ID, Type, Message, Timestamp)
         CREATE TABLE IF NOT EXISTS Alerts (
             Id TEXT PRIMARY KEY,
-            Type TEXT NOT NULL,           -- 'CAPACITY', 'GATE', 'SPOT', etc.
+            Type TEXT NOT NULL,
             Message TEXT NOT NULL,
             Timestamp DATETIME NOT NULL,
             CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
         );
 
-        -- Índices para mejorar performance en búsquedas frecuentes
         CREATE INDEX IF NOT EXISTS IX_ParkingSpots_LotId ON ParkingSpots(LotId);
         CREATE INDEX IF NOT EXISTS IX_ParkingSpots_IsOccupied ON ParkingSpots(IsOccupied);
         CREATE INDEX IF NOT EXISTS IX_RequestLogs_VehiclePlate ON RequestLogs(VehiclePlate);
@@ -121,7 +103,6 @@ public class DatabaseInitializer
         await command.ExecuteNonQueryAsync();
     }
 
-    /// <summary>Verifica si la BD ya contiene datos.</summary>
     private async Task<bool> HasDataAsync(SqliteConnection connection)
     {
         using var command = connection.CreateCommand();
@@ -130,14 +111,12 @@ public class DatabaseInitializer
         return result is long count && count > 0;
     }
 
-    /// <summary>Realiza el seeding inicial de datos (GRASP - Creator).</summary>
     private async Task SeedDataAsync(SqliteConnection connection)
     {
         using var transaction = connection.BeginTransaction();
 
         try
         {
-            // 1. Insertar lotes de estacionamiento
             var lotId = "LOT-01";
             using (var command = connection.CreateCommand())
             {
@@ -152,7 +131,6 @@ public class DatabaseInitializer
                 await command.ExecuteNonQueryAsync();
             }
 
-            // 2. Insertar espacios de estacionamiento
             var spots = new[]
             {
                 ("A1", "Zona-A Fila-1", "Estándar", "Planta Baja"),

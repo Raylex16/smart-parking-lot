@@ -7,7 +7,6 @@ public class EntryRequest : Request
     public bool Approved { get; private set; }
     public EntryRequest(string vehiclePlate){ VehiclePlate = vehiclePlate; }
 
-    // GRASP - Polymorphism: Cada tipo de Request implementa su propia lógica de ejecución
     public override void Execute(IGateRequestHandler handler)
     {
         Console.WriteLine($"\n[EntryRequest] Solicitud recibida: Vehículo '{VehiclePlate}' a las {Timestamp:HH:mm:ss}");

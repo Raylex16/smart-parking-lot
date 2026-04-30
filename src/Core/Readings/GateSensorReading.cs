@@ -1,6 +1,5 @@
 namespace SmartParkingLot.Core;
 
-// GRASP - Information Expert: Lectura específica de un sensor de puerta, conoce la placa y el gateId
 public class GateSensorReading : SensorReading
 {
     public string Plate { get; }

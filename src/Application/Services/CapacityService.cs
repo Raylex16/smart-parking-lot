@@ -3,8 +3,6 @@ using SmartParkingLot.Core.Interfaces;
 
 namespace SmartParkingLot.Application;
 
-// GRASP - Indirection: Servicio intermediario que desacopla al controlador de la lógica de capacidad
-// GRASP - High Cohesion: Solo se encarga de operaciones relacionadas con la capacidad del parqueadero
 public class CapacityService : ICapacityService
 {
     private readonly ParkingLot _parkingLot;
@@ -27,7 +25,6 @@ public class CapacityService : ICapacityService
 
     public void ReleaseSpot(string spotId)
     {
-        // GRASP - Information Expert: Delega al ParkingLot buscar el spot, y al spot liberarse
         var spots = _parkingLot.GetSpots();
         var spot = spots.FirstOrDefault(s => s.Id == spotId);
 
@@ -44,8 +41,6 @@ public class CapacityService : ICapacityService
 
     public void UpdateSpotState(SpotSensorReading reading)
     {
-        // GRASP - Information Expert: El servicio localiza el spot y delega la decisión
-        // de cambio de estado (con idempotencia) a la propia entidad.
         var spots = _parkingLot.GetSpots();
         var spot = spots.FirstOrDefault(s => s.Id == reading.SpotId);
 

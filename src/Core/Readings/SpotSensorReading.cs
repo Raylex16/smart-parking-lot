@@ -1,6 +1,5 @@
 namespace SmartParkingLot.Core;
 
-// GRASP - Information Expert: Lectura específica de un sensor de espacio, sabe si está ocupado
 public class SpotSensorReading : SensorReading
 {
     public string SpotId { get; }

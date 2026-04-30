@@ -3,8 +3,6 @@ using SmartParkingLot.Core.Interfaces;
 
 namespace SmartParkingLot.Application;
 
-// GRASP - Pure Fabrication: Servicio que no representa un concepto del dominio real,
-// sino una fabricación para manejar la responsabilidad de alertas sin sobrecargar al controlador
 public class AlertService : IAlertService
 {
     private readonly List<Alert> _alerts = [];
@@ -30,13 +28,12 @@ public class AlertService : IAlertService
 
         var alert = new Alert(alertId, type, message);
         _alerts.Add(alert);
-        
-        // Persistir en BD si el repositorio está disponible (fire-and-forget)
+
         if (_repository != null)
         {
             _ = _repository.LogAlertAsync(alertId, type, message, alert.Date);
         }
-        
+
         alert.Notify();
     }
 

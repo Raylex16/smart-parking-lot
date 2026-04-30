@@ -3,7 +3,6 @@ using SmartParkingLot.Core.Events;
 
 namespace SmartParkingLot.Hardware;
 
-// GRASP - Pure Fabrication: traductor puro entre líneas seriales y el modelo de dominio.
 public sealed record AckMessage(bool Ok, string CommandId, string? Reason);
 
 public static class SerialProtocol

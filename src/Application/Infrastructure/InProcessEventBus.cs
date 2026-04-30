@@ -3,7 +3,6 @@ using SmartParkingLot.Core.Interfaces;
 
 namespace SmartParkingLot.Application.Infrastructure;
 
-// GRASP - Pure Fabrication: bus en proceso que desacopla productores de consumidores.
 public sealed class InProcessEventBus : IEventPublisher
 {
     private readonly ConcurrentDictionary<Type, List<Delegate>> _handlers = new();

@@ -37,11 +37,9 @@ public class ParkingSpot
         IsOccupied = false;
     }
 
-    // GRASP - Information Expert: el spot conoce su estado y decide si hay cambio.
-    // Idempotente: si el estado no cambia, no emite evento.
     public void ApplyOccupancy(bool isOccupied, string source)
     {
-        if (IsOccupied == isOccupied) return;  // idempotencia
+        if (IsOccupied == isOccupied) return;
         IsOccupied = isOccupied;
         OccupancyChanged?.Invoke(
             new SpotOccupancyChanged(Id, isOccupied, source, DateTimeOffset.UtcNow));

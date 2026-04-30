@@ -1,6 +1,5 @@
 namespace SmartParkingLot.Core;
 
-// GRASP - Information Expert: La lectura del sensor es quien conoce su timestamp y valor registrado
 public abstract class SensorReading
 {
     public DateTime Timestamp { get; }

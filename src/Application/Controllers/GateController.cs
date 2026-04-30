@@ -3,12 +3,8 @@ using SmartParkingLot.Core.Interfaces;
 
 namespace SmartParkingLot.Application;
 
-// GRASP - Controller: Orquesta las solicitudes de entrada/salida sin contener lógica de negocio
-// GRASP - Low Coupling: Depende de interfaces (ICapacityService, IAlertService, IGate), no de implementaciones
-// SOLID - DIP: Implementa IGateRequestHandler para que el dominio (Request) no dependa de esta clase concreta
 public class GateController : IGateRequestHandler
 {
-    // Usamos un Dictionary para lookup en tiempo constante O(1)
     private readonly Dictionary<string, IGate> _gates = new();
 
     public ICapacityService CapacityService { get; }
@@ -20,7 +16,6 @@ public class GateController : IGateRequestHandler
         AlertService = alertService;
     }
 
-    // GRASP - Controller: Recibe el evento del sistema y delega la ejecución al Request (Polymorphism)
     public void HandleRequest(Request request)
     {
         request.Execute(this);
@@ -47,7 +42,6 @@ public class GateController : IGateRequestHandler
         }
         else
         {
-            // GRASP - Indirection: Delega la generación de alerta al servicio especializado
             var reading = new GateSensorReading("N/A", gateId);
             AlertService.GenerateAlert(reading);
             Console.WriteLine($"[GateController] ALERTA: Intento de abrir una puerta inexistente (ID: {gateId})");

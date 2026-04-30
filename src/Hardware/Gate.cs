@@ -3,9 +3,6 @@ using SmartParkingLot.Core.Interfaces;
 
 namespace SmartParkingLot.Hardware;
 
-// SOLID - DIP: Implementa IGate definida en Core, permitiendo que Application
-// trabaje con la abstracción sin conocer esta implementación concreta.
-// GRASP - Polymorphism: Extiende Actuator e implementa IGate para el despacho polimórfico.
 public class Gate : Actuator, IGate
 {
     private int _angle;
@@ -34,13 +31,11 @@ public class Gate : Actuator, IGate
 
     public bool GetState()
     {
-        // Verdadero si está abierta (ángulo mayor a MIN_ANGLE)
         return _angle > MIN_ANGLE;
     }
 
     public override void ExecCommand()
     {
-        // Aquí se simula el comando o señal física al actuador/pin
         Console.WriteLine($"[Actuator] Ejecutando comando en el PIN {_pin}, Ángulo asignado: {_angle}°");
     }
 }
