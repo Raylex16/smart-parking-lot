@@ -1,4 +1,3 @@
-
 using System.IO.Ports;
 using SmartParkingLot.Core.Events;
 using SmartParkingLot.Core.Interfaces;
@@ -7,25 +6,23 @@ namespace SmartParkingLot.Hardware;
 
 public class ArduinoSerialBridge : IArduinoReader
 {
+    private const string LogSource = "ArduinoSerialBridge";
+
     private readonly SerialPort _serialPort;
     private readonly IEventPublisher _events;
+    private readonly ILogger _logger;
     private Thread? _readThread;
     private volatile bool _listening;
-    private volatile bool _consoleLoggingEnabled;
 
     public bool IsListening => _listening;
-    public bool ConsoleLoggingEnabled
-    {
-        get => _consoleLoggingEnabled;
-        set => _consoleLoggingEnabled = value;
-    }
 
-    public ArduinoSerialBridge(string portName, int baudRate, IEventPublisher events)
+    public ArduinoSerialBridge(string portName, int baudRate, IEventPublisher events, ILogger logger)
     {
         _serialPort = new SerialPort(portName, baudRate);
         _serialPort.ReadTimeout = SERIAL_TIMEOUT_MS;
         _serialPort.WriteTimeout = SERIAL_TIMEOUT_MS;
         _events = events;
+        _logger = logger;
     }
 
     public void StartListening()
@@ -43,13 +40,11 @@ public class ArduinoSerialBridge : IArduinoReader
                 Name = "ArduinoSerialBridge-Reader"
             };
             _readThread.Start();
-            if (ConsoleLoggingEnabled)
-                Console.WriteLine($"[ArduinoSerialBridge] Escuchando en {_serialPort.PortName} a {_serialPort.BaudRate} baud");
+            _logger.Info(LogSource, $"Escuchando en {_serialPort.PortName} a {_serialPort.BaudRate} baud");
         }
         catch (Exception ex)
         {
-            if (ConsoleLoggingEnabled)
-                Console.WriteLine($"[ArduinoSerialBridge] Error al abrir puerto {_serialPort.PortName}: {ex.Message}");
+            _logger.Error(LogSource, $"Error al abrir puerto {_serialPort.PortName}: {ex.Message}");
         }
     }
 
@@ -60,8 +55,7 @@ public class ArduinoSerialBridge : IArduinoReader
         if (_serialPort.IsOpen)
             _serialPort.Close();
 
-        if (ConsoleLoggingEnabled)
-            Console.WriteLine("[ArduinoSerialBridge] Escucha detenida");
+        _logger.Info(LogSource, "Escucha detenida");
     }
 
     private void ReadLoop()
@@ -78,8 +72,8 @@ public class ArduinoSerialBridge : IArduinoReader
             }
             catch (Exception ex)
             {
-                if (_listening && ConsoleLoggingEnabled)
-                    Console.WriteLine($"[ArduinoSerialBridge] Error de lectura: {ex.Message}");
+                if (_listening)
+                    _logger.Error(LogSource, $"Error de lectura: {ex.Message}");
             }
         }
     }
@@ -95,18 +89,14 @@ public class ArduinoSerialBridge : IArduinoReader
         var parts = line.Split(':');
         if (parts.Length == 2 && parts[1] is "0" or "1")
         {
-            if (ConsoleLoggingEnabled)
-            {
-                var state = parts[1] == "1" ? "OCUPADO" : "LIBRE";
-                Console.WriteLine($"[ArduinoSerialBridge] {parts[0]} -> {state}");
-            }
+            var state = parts[1] == "1" ? "OCUPADO" : "LIBRE";
+            _logger.Debug(LogSource, $"{parts[0]} -> {state}");
 
             _events.Publish(new SensorReadingReceived(parts[0], "SENSOR", parts[1], DateTimeOffset.UtcNow));
             return;
         }
 
-        if (ConsoleLoggingEnabled)
-            Console.WriteLine($"[ArduinoSerialBridge] Linea ignorada: '{line}'");
+        _logger.Debug(LogSource, $"Linea ignorada: '{line}'");
     }
 
     public void WriteLine(string line)

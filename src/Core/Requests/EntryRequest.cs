@@ -4,36 +4,46 @@ namespace SmartParkingLot.Core;
 
 public class EntryRequest : Request
 {
+    private const string LogSource = "EntryRequest";
+
     public bool Approved { get; private set; }
-    public EntryRequest(string vehiclePlate){ VehiclePlate = vehiclePlate; }
+    public EntryRequest(string vehiclePlate) { VehiclePlate = vehiclePlate; }
 
     public override void Execute(IGateRequestHandler handler)
     {
-        Console.WriteLine($"\n[EntryRequest] Solicitud recibida: Vehículo '{VehiclePlate}' a las {Timestamp:HH:mm:ss}");
+        handler.Logger.Log(LogLevel.Info, LogSource,
+            $"Solicitud recibida: Vehículo '{VehiclePlate}' a las {Timestamp:HH:mm:ss}");
 
-        Approved = handler.CapacityService.HasAvailableSpots();
+        if (!handler.CapacityService.HasAvailableSpots())
+        {
+            Approved = false;
+            handler.AlertService.GenerateAlert(new GateSensorReading(VehiclePlate, GateId));
+            handler.Logger.Log(LogLevel.Warning, LogSource,
+                $"Sin espacios disponibles para {VehiclePlate}. Puerta permanece CERRADA.");
+            return;
+        }
 
-        if (Approved)
+        if (!handler.AccessPolicy.CanEnter(this))
         {
-            var spot = handler.CapacityService.ReserveSpot();
-            if (spot != null)
-            {
-                Console.WriteLine($"[EntryRequest] Espacio asignado: {spot}");
-                handler.OpenGate(GateId);
-            }
-            else
-            {
-                Approved = false;
-                var reading = new GateSensorReading(VehiclePlate, GateId);
-                handler.AlertService.GenerateAlert(reading);
-                Console.WriteLine($"[EntryRequest] Error al reservar espacio para {VehiclePlate}. Puerta permanece CERRADA.");
-            }
+            Approved = false;
+            handler.AlertService.GenerateAlert(new GateSensorReading(VehiclePlate, GateId));
+            handler.Logger.Log(LogLevel.Warning, LogSource,
+                $"Política de acceso rechazó el ingreso de {VehiclePlate}. Puerta permanece CERRADA.");
+            return;
         }
-        else
+
+        var spot = handler.CapacityService.ReserveSpot();
+        if (spot is null)
         {
-            var reading = new GateSensorReading(VehiclePlate, GateId);
-            handler.AlertService.GenerateAlert(reading);
-            Console.WriteLine($"[EntryRequest] Sin espacios disponibles para {VehiclePlate}. Puerta permanece CERRADA.");
+            Approved = false;
+            handler.AlertService.GenerateAlert(new GateSensorReading(VehiclePlate, GateId));
+            handler.Logger.Log(LogLevel.Error, LogSource,
+                $"Error al reservar espacio para {VehiclePlate}. Puerta permanece CERRADA.");
+            return;
         }
+
+        Approved = true;
+        handler.Logger.Log(LogLevel.Info, LogSource, $"Espacio asignado: {spot}");
+        handler.OpenGate(GateId);
     }
 }

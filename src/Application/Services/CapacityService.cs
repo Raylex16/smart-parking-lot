@@ -5,11 +5,15 @@ namespace SmartParkingLot.Application;
 
 public class CapacityService : ICapacityService
 {
-    private readonly ParkingLot _parkingLot;
+    private const string LogSource = "CapacityService";
 
-    public CapacityService(ParkingLot parkingLot)
+    private readonly ParkingLot _parkingLot;
+    private readonly ILogger _logger;
+
+    public CapacityService(ParkingLot parkingLot, ILogger logger)
     {
         _parkingLot = parkingLot;
+        _logger = logger;
     }
 
     public bool HasAvailableSpots() => _parkingLot.IsAvailable();
@@ -31,11 +35,11 @@ public class CapacityService : ICapacityService
         if (spot is not null)
         {
             spot.Release();
-            Console.WriteLine($"[CapacityService] Espacio '{spotId}' liberado exitosamente");
+            _logger.Info(LogSource, $"Espacio '{spotId}' liberado exitosamente");
         }
         else
         {
-            Console.WriteLine($"[CapacityService] Espacio '{spotId}' no encontrado");
+            _logger.Warn(LogSource, $"Espacio '{spotId}' no encontrado");
         }
     }
 
@@ -46,7 +50,7 @@ public class CapacityService : ICapacityService
 
         if (spot is null)
         {
-            Console.WriteLine($"[CapacityService] Espacio '{reading.SpotId}' no encontrado para actualizar");
+            _logger.Warn(LogSource, $"Espacio '{reading.SpotId}' no encontrado para actualizar");
             return;
         }
 

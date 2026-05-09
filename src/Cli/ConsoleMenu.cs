@@ -1,4 +1,5 @@
 using SmartParkingLot.Application;
+using SmartParkingLot.Application.Logging;
 using SmartParkingLot.Core;
 using SmartParkingLot.Core.Events;
 using SmartParkingLot.Core.Interfaces;
@@ -8,6 +9,8 @@ namespace SmartParkingLot.Cli;
 
 public class ConsoleMenu
 {
+    private const int RECENT_LOG_LINES = 50;
+
     private readonly ParkingLot _lot;
     private readonly GateController _gateController;
     private readonly ICapacityService _capacityService;
@@ -17,6 +20,8 @@ public class ConsoleMenu
     private readonly Sensor<GateSensorReading> _gateSensor;
     private readonly IArduinoReader _bridge;
     private readonly SerialCommandDispatcher _dispatcher;
+    private readonly ConsoleLogger _consoleLogger;
+    private readonly FileLogger _fileLogger;
 
     public ConsoleMenu(
         ParkingLot lot,
@@ -27,7 +32,9 @@ public class ConsoleMenu
         Dictionary<string, Sensor<SpotSensorReading>> spotSensors,
         Sensor<GateSensorReading> gateSensor,
         IArduinoReader bridge,
-        SerialCommandDispatcher dispatcher)
+        SerialCommandDispatcher dispatcher,
+        ConsoleLogger consoleLogger,
+        FileLogger fileLogger)
     {
         _lot = lot;
         _gateController = gateController;
@@ -38,6 +45,8 @@ public class ConsoleMenu
         _gateSensor = gateSensor;
         _bridge = bridge;
         _dispatcher = dispatcher;
+        _consoleLogger = consoleLogger;
+        _fileLogger = fileLogger;
     }
 
     public async Task RunAsync()
@@ -61,6 +70,7 @@ public class ConsoleMenu
                     case "7": await ShowDeviceActionsAsync(); break;
                     case "8": RunLiveMonitoring(); break;
                     case "9": await ShowSpotsFromDbAsync(); break;
+                    case "10": ShowRecentLogs(); break;
                     case "0":
                         Console.WriteLine("Saliendo...");
                         return;
@@ -98,6 +108,7 @@ public class ConsoleMenu
         Console.WriteLine("  7. # Ver acciones de un dispositivo");
         Console.WriteLine("  8. Monitoreo en tiempo real (Arduino)");
         Console.WriteLine("  9. Ver estado de espacios");
+        Console.WriteLine("  10. Ver logs recientes");
         Console.WriteLine("  0. Salir");
     }
 
@@ -328,8 +339,8 @@ public class ConsoleMenu
             return;
         }
 
-        _bridge.ConsoleLoggingEnabled = true;
-        _dispatcher.ConsoleLoggingEnabled = true;
+        var previousLevel = _consoleLogger.MinimumLevel;
+        _consoleLogger.MinimumLevel = LogLevel.Debug;
 
         while (!Console.KeyAvailable)
         {
@@ -337,8 +348,28 @@ public class ConsoleMenu
         }
 
         Console.ReadKey(intercept: true);
-        _bridge.ConsoleLoggingEnabled = false;
-        _dispatcher.ConsoleLoggingEnabled = false;
+        _consoleLogger.MinimumLevel = previousLevel;
         Console.WriteLine("\nMonitoreo detenido.");
+    }
+
+    // TODO: a futuro permitir seleccionar fecha o rango de fechas para mostrar logs históricos.
+    private void ShowRecentLogs()
+    {
+        var path = _fileLogger.GetCurrentLogFilePath();
+
+        if (!File.Exists(path))
+        {
+            Console.WriteLine($"\nNo hay archivo de log para hoy ({path}).");
+            return;
+        }
+
+        var lines = File.ReadAllLines(path);
+        var tail = lines.Length > RECENT_LOG_LINES
+            ? lines[^RECENT_LOG_LINES..]
+            : lines;
+
+        Console.WriteLine($"\nÚltimas {tail.Length} línea(s) de '{Path.GetFileName(path)}':\n");
+        foreach (var line in tail)
+            Console.WriteLine($"  {line}");
     }
 }

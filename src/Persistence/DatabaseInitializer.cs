@@ -1,15 +1,20 @@
 using Microsoft.Data.Sqlite;
 using SmartParkingLot.Core;
+using SmartParkingLot.Core.Interfaces;
 
 namespace SmartParkingLot.Persistence;
 
 public class DatabaseInitializer
 {
-    private readonly string _connectionString;
+    private const string LogSource = "Database";
 
-    public DatabaseInitializer(string connectionString)
+    private readonly string _connectionString;
+    private readonly ILogger _logger;
+
+    public DatabaseInitializer(string connectionString, ILogger logger)
     {
         _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+        _logger = logger;
     }
 
     public async Task InitializeAsync()
@@ -155,12 +160,12 @@ public class DatabaseInitializer
             }
 
             await transaction.CommitAsync();
-            Console.WriteLine("[Database] ✓ Schema creado y seeding completado exitosamente.");
+            _logger.Info(LogSource, "Schema creado y seeding completado exitosamente");
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            Console.WriteLine($"[Database] ✗ Error en seeding: {ex.Message}");
+            _logger.Error(LogSource, $"Error en seeding: {ex.Message}");
             throw;
         }
     }

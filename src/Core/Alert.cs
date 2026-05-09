@@ -15,11 +15,6 @@ public class Alert
         Date = DateTime.Now;
     }
 
-    public void Notify()
-    {
-        Console.WriteLine($"[Alert {Id}] [{Type}] {Message} (Fecha: {Date:yyyy-MM-dd HH:mm:ss})");
-    }
-
     public override string ToString() =>
         $"[Alert {Id} | {Type}] {Message}";
 }

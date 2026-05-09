@@ -7,25 +7,27 @@ public class Sensor<T> : ISensor, ISensorCapture<T> where T : SensorReading
 {
     private readonly string _id;
     private readonly string _type;
+    private readonly ILogger _logger;
     private T? _snapshot;
 
     public string Id => _id;
 
-    public Sensor(string id, string type)
+    public Sensor(string id, string type, ILogger logger)
     {
         _id = id;
         _type = type;
+        _logger = logger;
     }
 
     public float ReadValue()
     {
         if (_snapshot is null)
         {
-            Console.WriteLine($"[Sensor {_id}] Sin lecturas registradas, retornando 0");
+            _logger.Debug($"Sensor {_id}", "Sin lecturas registradas, retornando 0");
             return 0f;
         }
 
-        Console.WriteLine($"[Sensor {_id}] Leyendo valor: {_snapshot.RegisteredValue}");
+        _logger.Debug($"Sensor {_id}", $"Leyendo valor: {_snapshot.RegisteredValue}");
         return _snapshot.RegisteredValue;
     }
 
@@ -33,7 +35,7 @@ public class Sensor<T> : ISensor, ISensorCapture<T> where T : SensorReading
 
     public T CaptureReading(T reading)
     {
-        Console.WriteLine($"[Sensor {_id}] Captura registrada — {reading}");
+        _logger.Info($"Sensor {_id}", $"Captura registrada — {reading}");
         _snapshot = reading;
         return reading;
     }
