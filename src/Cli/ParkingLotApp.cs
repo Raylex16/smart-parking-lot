@@ -1,6 +1,8 @@
 using SmartParkingLot.Application;
 using SmartParkingLot.Application.Handlers;
 using SmartParkingLot.Application.Infrastructure;
+using SmartParkingLot.Application.Logging;
+using SmartParkingLot.Application.Policies;
 using SmartParkingLot.Application.UseCases;
 using SmartParkingLot.Core;
 using SmartParkingLot.Core.Events;
@@ -20,9 +22,14 @@ public sealed class ParkingLotApp
         var dbPath = Path.Combine(AppContext.BaseDirectory, DB_FOLDER_NAME, DB_FILE_NAME);
         Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
 
+        var logsDir = Path.Combine(AppContext.BaseDirectory, "logs");
+        var consoleLogger = new ConsoleLogger(LogLevel.Info);
+        var fileLogger = new FileLogger(logsDir, LogLevel.Debug);
+        ILogger logger = new CompositeLogger(consoleLogger, fileLogger);
+
         var connectionString = $"Data Source={dbPath};";
 
-        var initializer = new DatabaseInitializer(connectionString);
+        var initializer = new DatabaseInitializer(connectionString, logger);
         await initializer.InitializeAsync();
 
         IParkingRepository repository = new SqliteParkingRepository(connectionString);
@@ -35,21 +42,21 @@ public sealed class ParkingLotApp
         var lot = await repository.GetParkingLotByIdAsync(DEFAULT_LOT_ID);
         if (lot is null)
         {
-            Console.WriteLine($"[ERROR] No se encontró el parqueadero '{DEFAULT_LOT_ID}' en la BD.");
+            logger.Error("ParkingLotApp", $"No se encontró el parqueadero '{DEFAULT_LOT_ID}' en la BD.");
             return;
         }
 
         IEventPublisher bus = new InProcessEventBus();
 
-        using var bridge = new ArduinoSerialBridge(hwConfig.Port, hwConfig.BaudRate, bus);
-        using var dispatcher = new SerialCommandDispatcher(bridge);
+        using var bridge = new ArduinoSerialBridge(hwConfig.Port, hwConfig.BaudRate, bus, logger);
+        using var dispatcher = new SerialCommandDispatcher(bridge, logger);
 
-        var gateSensor = new Sensor<GateSensorReading>("SEN-GATE-01", "LPR");
+        var gateSensor = new Sensor<GateSensorReading>("SEN-GATE-01", "LPR", logger);
 
         var spotSensors = new Dictionary<string, Sensor<SpotSensorReading>>();
         foreach (var s in lot.GetSpots())
         {
-            spotSensors[s.Id] = new Sensor<SpotSensorReading>($"SEN-SPOT-{s.Id}", "Ultrasonido");
+            spotSensors[s.Id] = new Sensor<SpotSensorReading>($"SEN-SPOT-{s.Id}", "Ultrasonido", logger);
         }
 
         var sensorToSpot = new Dictionary<string, string>(hwConfig.BuildSensorToSpot());
@@ -73,17 +80,17 @@ public sealed class ParkingLotApp
             };
         }
 
-        ICapacityService capacityService = new CapacityService(lot);
-        IAlertService alertService = new AlertService();
-        var gateController = new GateController(capacityService, alertService);
+        ICapacityService capacityService = new CapacityService(lot, logger);
+        IAlertService alertService = new AlertService(logger, repository);
+        IAccessPolicy accessPolicy = new AlwaysAllowPolicy();
+        var gateController = new GateController(capacityService, alertService, accessPolicy, logger);
 
-        gateController.RegisterGate(ENTRY_GATE_ID, new Gate(ENTRY_GATE_ID, GateType.ENTRY, ENTRY_GATE_PIN));
-        gateController.RegisterGate(EXIT_GATE_ID, new Gate(EXIT_GATE_ID, GateType.EXIT, EXIT_GATE_PIN));
+        gateController.RegisterGate(ENTRY_GATE_ID, new Gate(ENTRY_GATE_ID, GateType.ENTRY, ENTRY_GATE_PIN, logger));
+        gateController.RegisterGate(EXIT_GATE_ID, new Gate(EXIT_GATE_ID, GateType.EXIT, EXIT_GATE_PIN, logger));
 
-        bridge.ConsoleLoggingEnabled = false;
         bridge.StartListening();
 
-        var menu = new ConsoleMenu(lot, gateController, capacityService, repository, bus, spotSensors, gateSensor, bridge, dispatcher);
+        var menu = new ConsoleMenu(lot, gateController, capacityService, repository, bus, spotSensors, gateSensor, bridge, dispatcher, consoleLogger, fileLogger);
         await menu.RunAsync();
     }
 }

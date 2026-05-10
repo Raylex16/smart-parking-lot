@@ -11,7 +11,8 @@ public class ExitRequest : Request
 
     public override void Execute(IGateRequestHandler handler)
     {
-        Console.WriteLine($"\n[ExitRequest] Solicitud de salida: Vehículo '{VehiclePlate}' a las {Timestamp:HH:mm:ss}");
+        handler.Logger.Log(LogLevel.Info, "ExitRequest",
+            $"Solicitud de salida: Vehículo '{VehiclePlate}' a las {Timestamp:HH:mm:ss}");
         handler.OpenGate(GateId);
     }
 }

@@ -6,21 +6,18 @@ namespace SmartParkingLot.Hardware;
 
 public sealed class SerialCommandDispatcher : ICommandDispatcher, IDisposable
 {
+    private const string LogSource = "SerialCommandDispatcher";
+
     private readonly ArduinoSerialBridge _bridge;
+    private readonly ILogger _logger;
     private readonly BlockingCollection<ActuatorCommand> _queue = new();
     private readonly Thread _writer;
     private volatile bool _running = true;
-    private volatile bool _consoleLoggingEnabled;
 
-    public bool ConsoleLoggingEnabled
-    {
-        get => _consoleLoggingEnabled;
-        set => _consoleLoggingEnabled = value;
-    }
-
-    public SerialCommandDispatcher(ArduinoSerialBridge bridge)
+    public SerialCommandDispatcher(ArduinoSerialBridge bridge, ILogger logger)
     {
         _bridge = bridge;
+        _logger = logger;
         _writer = new Thread(Loop) { IsBackground = true, Name = "SerialCommandDispatcher-Writer" };
         _writer.Start();
     }
@@ -35,13 +32,11 @@ public sealed class SerialCommandDispatcher : ICommandDispatcher, IDisposable
             try
             {
                 _bridge.WriteLine(SerialProtocol.SerializeCommand(cmd));
-                if (_consoleLoggingEnabled)
-                    Console.WriteLine($"[Dispatcher] -> {cmd.CommandId} {cmd.ActuatorId} {cmd.Action}:{cmd.Payload}");
+                _logger.Debug(LogSource, $"-> {cmd.CommandId} {cmd.ActuatorId} {cmd.Action}:{cmd.Payload}");
             }
             catch (Exception ex)
             {
-                if (_consoleLoggingEnabled)
-                    Console.WriteLine($"[Dispatcher] Error enviando {cmd.CommandId}: {ex.Message}");
+                _logger.Error(LogSource, $"Error enviando {cmd.CommandId}: {ex.Message}");
             }
         }
     }

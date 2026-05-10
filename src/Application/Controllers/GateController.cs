@@ -5,15 +5,25 @@ namespace SmartParkingLot.Application;
 
 public class GateController : IGateRequestHandler
 {
+    private const string LogSource = "GateController";
+
     private readonly Dictionary<string, IGate> _gates = new();
 
     public ICapacityService CapacityService { get; }
     public IAlertService AlertService { get; }
+    public IAccessPolicy AccessPolicy { get; }
+    public ILogger Logger { get; }
 
-    public GateController(ICapacityService capacityService, IAlertService alertService)
+    public GateController(
+        ICapacityService capacityService,
+        IAlertService alertService,
+        IAccessPolicy accessPolicy,
+        ILogger logger)
     {
         CapacityService = capacityService;
         AlertService = alertService;
+        AccessPolicy = accessPolicy;
+        Logger = logger;
     }
 
     public void HandleRequest(Request request)
@@ -42,9 +52,8 @@ public class GateController : IGateRequestHandler
         }
         else
         {
-            var reading = new GateSensorReading("N/A", gateId);
-            AlertService.GenerateAlert(reading);
-            Console.WriteLine($"[GateController] ALERTA: Intento de abrir una puerta inexistente (ID: {gateId})");
+            AlertService.GenerateAlert(new GateSensorReading("N/A", gateId));
+            Logger.Warn(LogSource, $"Intento de abrir una puerta inexistente (ID: {gateId})");
         }
     }
 }

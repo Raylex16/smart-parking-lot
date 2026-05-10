@@ -22,7 +22,6 @@ public class ParkingLot
     public void SetMode(ParkingMode mode)
     {
         Mode = mode;
-        Console.WriteLine($"[ParkingLot] Modo cambiado a: {mode}");
     }
 
     public void AddSpot(ParkingSpot spot)

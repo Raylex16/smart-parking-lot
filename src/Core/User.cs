@@ -9,15 +9,9 @@ public class User
         _parkingLot = parkingLot;
     }
 
-    public void CheckAvailability()
-    {
-        var available = _parkingLot.AvailableSpots;
-        var total = _parkingLot.TotalSpots;
-        Console.WriteLine($"[User] Consulta de disponibilidad: {available}/{total} espacios disponibles");
-    }
+    public (int Available, int Total) GetAvailability() =>
+        (_parkingLot.AvailableSpots, _parkingLot.TotalSpots);
 
-    public void ConfigSystem()
-    {
-        Console.WriteLine($"[User] Configuración del sistema — Parqueadero: {_parkingLot.Name} | Modo: {_parkingLot.Mode}");
-    }
+    public (string Name, ParkingMode Mode) GetSystemConfig() =>
+        (_parkingLot.Name, _parkingLot.Mode);
 }

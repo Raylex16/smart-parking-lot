@@ -5,14 +5,16 @@ namespace SmartParkingLot.Hardware;
 
 public class Gate : Actuator, IGate
 {
+    private readonly ILogger _logger;
     private int _angle;
     private GateType _type;
 
-    public Gate(string id, GateType type, int pin)
+    public Gate(string id, GateType type, int pin, ILogger logger)
     {
         _id = id;
         _type = type;
         _pin = pin;
+        _logger = logger;
     }
 
     public void Open()
@@ -20,7 +22,7 @@ public class Gate : Actuator, IGate
         _angle = MAX_ANGLE;
 
         ExecCommand();
-        Console.WriteLine($"[Gate {_id}] >>> PUERTA ABIERTA <<<");
+        _logger.Info($"Gate {_id}", ">>> PUERTA ABIERTA <<<");
     }
 
     public void Close()
@@ -36,6 +38,6 @@ public class Gate : Actuator, IGate
 
     public override void ExecCommand()
     {
-        Console.WriteLine($"[Actuator] Ejecutando comando en el PIN {_pin}, Ángulo asignado: {_angle}°");
+        _logger.Debug("Actuator", $"Ejecutando comando en el PIN {_pin}, Ángulo asignado: {_angle}°");
     }
 }
