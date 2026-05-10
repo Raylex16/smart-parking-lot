@@ -363,12 +363,15 @@ public class ConsoleMenu
             return;
         }
 
-        var lines = File.ReadAllLines(path);
-        var tail = lines.Length > RECENT_LOG_LINES
-            ? lines[^RECENT_LOG_LINES..]
-            : lines;
+        var tail = new Queue<string>(RECENT_LOG_LINES);
+        foreach (var line in File.ReadLines(path))
+        {
+            if (tail.Count == RECENT_LOG_LINES)
+                tail.Dequeue();
+            tail.Enqueue(line);
+        }
 
-        Console.WriteLine($"\nÚltimas {tail.Length} línea(s) de '{Path.GetFileName(path)}':\n");
+        Console.WriteLine($"\nÚltimas {tail.Count} línea(s) de '{Path.GetFileName(path)}':\n");
         foreach (var line in tail)
             Console.WriteLine($"  {line}");
     }
