@@ -16,8 +16,7 @@ public class FileLogger : ILogger
         Directory.CreateDirectory(_directory);
     }
 
-    public string GetCurrentLogFilePath() =>
-        Path.Combine(_directory, $"parking-{DateTime.Now:yyyy-MM-dd}.log");
+    public string GetCurrentLogFilePath() => BuildPath(DateTime.Now);
 
     public IEnumerable<string> ListLogFiles() =>
         Directory.Exists(_directory)
@@ -28,12 +27,16 @@ public class FileLogger : ILogger
     public void Log(LogLevel level, string source, string message)
     {
         if (level < MinimumLevel) return;
-        var line = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}][{Tag(level)}][{source}] {message}{Environment.NewLine}";
+        var now = DateTime.Now;
+        var line = $"[{now:yyyy-MM-dd HH:mm:ss.fff}][{Tag(level)}][{source}] {message}{Environment.NewLine}";
         lock (_writeLock)
         {
-            File.AppendAllText(GetCurrentLogFilePath(), line);
+            File.AppendAllText(BuildPath(now), line);
         }
     }
+
+    private string BuildPath(DateTime when) =>
+        Path.Combine(_directory, $"parking-{when:yyyy-MM-dd}.log");
 
     private static string Tag(LogLevel level) => level switch
     {

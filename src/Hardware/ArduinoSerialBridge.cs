@@ -44,7 +44,7 @@ public class ArduinoSerialBridge : IArduinoReader
         }
         catch (Exception ex)
         {
-            _logger.Error(LogSource, $"Error al abrir puerto {_serialPort.PortName}: {ex.Message}");
+            _logger.Error(LogSource, $"Error al abrir puerto {_serialPort.PortName}: {ex.ToString()}");
         }
     }
 

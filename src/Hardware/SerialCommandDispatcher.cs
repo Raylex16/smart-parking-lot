@@ -36,7 +36,7 @@ public sealed class SerialCommandDispatcher : ICommandDispatcher, IDisposable
             }
             catch (Exception ex)
             {
-                _logger.Error(LogSource, $"Error enviando {cmd.CommandId}: {ex.Message}");
+                _logger.Error(LogSource, $"Error enviando {cmd.CommandId}: {ex.ToString()}");
             }
         }
     }

@@ -14,7 +14,7 @@ public class DatabaseInitializer
     public DatabaseInitializer(string connectionString, ILogger logger)
     {
         _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
-        _logger = logger;
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task InitializeAsync()
@@ -165,7 +165,7 @@ public class DatabaseInitializer
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            _logger.Error(LogSource, $"Error en seeding: {ex.Message}");
+            _logger.Error(LogSource, $"Error en seeding: {ex.ToString()}");
             throw;
         }
     }
