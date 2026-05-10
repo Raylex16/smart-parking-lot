@@ -26,5 +26,21 @@
       "type": "Estándar",
       "floor": "Planta Baja"
     }
+  ],
+  "gates": [
+    {
+      "gateId": "G-01",
+      "type": "ENTRY",
+      "irSensorId": "GATE-IR1",
+      "actuatorId": "GATE1",
+      "pin": 9
+    },
+    {
+      "gateId": "G-02",
+      "type": "EXIT",
+      "irSensorId": "GATE-IR2",
+      "actuatorId": "GATE2",
+      "pin": 10
+    }
   ]
 }

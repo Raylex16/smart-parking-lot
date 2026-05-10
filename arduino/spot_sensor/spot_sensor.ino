@@ -1,7 +1,3 @@
-// Smart Parking Lot — Sketch bidireccional V2 (3 sensores IR)
-// Inbound:  EVT:SENSOR:IR<1|2|3>:<0|1>
-// Outbound: CMD:ACT:LED<1|2|3>:SET:<0|1>
-// Ack:      ACK:<actuatorId> / NACK:<actuatorId>:<reason>
 
 const int SENSOR_COUNT = 3;
 

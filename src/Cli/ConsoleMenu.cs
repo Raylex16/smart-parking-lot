@@ -71,6 +71,7 @@ public class ConsoleMenu
                     case "8": RunLiveMonitoring(); break;
                     case "9": await ShowSpotsFromDbAsync(); break;
                     case "10": ShowRecentLogs(); break;
+                    case "11": SimulateGateSensor(); break;
                     case "0":
                         Console.WriteLine("Saliendo...");
                         return;
@@ -109,6 +110,7 @@ public class ConsoleMenu
         Console.WriteLine("  8. Monitoreo en tiempo real (Arduino)");
         Console.WriteLine("  9. Ver estado de espacios");
         Console.WriteLine("  10. Ver logs recientes");
+        Console.WriteLine("  11. Simular sensor de puerta (IR)");
         Console.WriteLine("  0. Salir");
     }
 
@@ -350,6 +352,39 @@ public class ConsoleMenu
         Console.ReadKey(intercept: true);
         _consoleLogger.MinimumLevel = previousLevel;
         Console.WriteLine("\nMonitoreo detenido.");
+    }
+
+    private void SimulateGateSensor()
+    {
+        Console.WriteLine($"Puertas configuradas: {ENTRY_GATE_ID} (entrada) | {EXIT_GATE_ID} (salida)");
+        Console.Write($"\nID de la puerta: ");
+        var gateId = Console.ReadLine()?.Trim();
+        if (string.IsNullOrWhiteSpace(gateId))
+        {
+            Console.WriteLine("ID vacío.");
+            return;
+        }
+
+        var irSensorId = gateId switch
+        {
+            ENTRY_GATE_ID => "GATE-IR1",
+            EXIT_GATE_ID  => "GATE-IR2",
+            _ => null
+        };
+
+        if (irSensorId is null)
+        {
+            Console.WriteLine($"Puerta '{gateId}' no reconocida. Use {ENTRY_GATE_ID} o {EXIT_GATE_ID}.");
+            return;
+        }
+
+        _bus.Publish(new SensorReadingReceived(
+            SensorId: irSensorId,
+            SensorType: "IR",
+            RawValue: "1",
+            Timestamp: DateTimeOffset.Now));
+
+        Console.WriteLine($"\n[Simulado] Evento publicado: {irSensorId} → 1");
     }
 
     // TODO: a futuro permitir seleccionar fecha o rango de fechas para mostrar logs históricos.

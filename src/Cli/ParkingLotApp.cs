@@ -3,6 +3,7 @@ using SmartParkingLot.Application.Handlers;
 using SmartParkingLot.Application.Infrastructure;
 using SmartParkingLot.Application.Logging;
 using SmartParkingLot.Application.Policies;
+using SmartParkingLot.Application.Recognition;
 using SmartParkingLot.Application.UseCases;
 using SmartParkingLot.Core;
 using SmartParkingLot.Core.Events;
@@ -85,8 +86,12 @@ public sealed class ParkingLotApp
         IAccessPolicy accessPolicy = new AlwaysAllowPolicy();
         var gateController = new GateController(capacityService, alertService, accessPolicy, logger);
 
-        gateController.RegisterGate(ENTRY_GATE_ID, new Gate(ENTRY_GATE_ID, GateType.ENTRY, ENTRY_GATE_PIN, logger));
-        gateController.RegisterGate(EXIT_GATE_ID, new Gate(EXIT_GATE_ID, GateType.EXIT, EXIT_GATE_PIN, logger));
+        gateController.RegisterGate(ENTRY_GATE_ID, new Gate(ENTRY_GATE_ID, GateType.ENTRY, ENTRY_GATE_PIN, ENTRY_GATE_ACTUATOR_ID, dispatcher, logger));
+        gateController.RegisterGate(EXIT_GATE_ID, new Gate(EXIT_GATE_ID, GateType.EXIT, EXIT_GATE_PIN, EXIT_GATE_ACTUATOR_ID, dispatcher, logger));
+
+        ILicensePlateRecognizer plateRecognizer = new PlaceholderPlateRecognizer();
+        var gateSensorHandler = new GateSensorHandler(gateController, plateRecognizer, logger, hwConfig.BuildGateSensorMapping());
+        bus.Subscribe<SensorReadingReceived>(gateSensorHandler.Handle);
 
         bridge.StartListening();
 
