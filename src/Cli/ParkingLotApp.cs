@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using SmartParkingLot.Application;
 using SmartParkingLot.Application.Display;
 using SmartParkingLot.Application.Handlers;
@@ -10,7 +11,7 @@ using SmartParkingLot.Core;
 using SmartParkingLot.Core.Events;
 using SmartParkingLot.Core.Interfaces;
 using SmartParkingLot.Hardware;
-using SmartParkingLot.Persistence;
+using SmartParkingLot.Infrastructure;
 
 namespace SmartParkingLot.Cli;
 
@@ -31,22 +32,36 @@ public sealed class ParkingLotApp
 
         var connectionString = $"Data Source={dbPath};";
 
-        var initializer = new DatabaseInitializer(connectionString, logger);
-        await initializer.InitializeAsync();
+        var services = new ServiceCollection();
+        services.AddInfrastructure(connectionString);
+        services.AddCompositeParkingRepository();
+        await using var serviceProvider = services.BuildServiceProvider();
 
-        IParkingRepository repository = new SqliteParkingRepository(connectionString);
+        await serviceProvider.InitializeDatabaseAsync();
+        await serviceProvider.SeedInitialDataAsync();
+
+        await using var scope = serviceProvider.CreateAsyncScope();
+        var sp = scope.ServiceProvider;
+
+        ISpotRepository spotRepository = sp.GetRequiredService<ISpotRepository>();
+        IAlertRepository alertRepository = sp.GetRequiredService<IAlertRepository>();
+        IRequestRepository requestRepository = sp.GetRequiredService<IRequestRepository>();
+        IParkingLotRepository parkingLotRepository = sp.GetRequiredService<IParkingLotRepository>();
+        #pragma warning disable CS0618
+        IParkingRepository repository = sp.GetRequiredService<IParkingRepository>();
+        #pragma warning restore CS0618
 
         foreach (var mapping in hwConfig.Sensors)
-            await repository.EnsureSpotExistsAsync(
+            await spotRepository.EnsureSpotExistsAsync(
                 mapping.SpotId, DEFAULT_LOT_ID,
                 mapping.Address, mapping.Type, mapping.Floor);
 
         var validSpotIds = hwConfig.Sensors.Select(m => m.SpotId).ToList();
-        var removed = await repository.RemoveOrphanSpotsAsync(DEFAULT_LOT_ID, validSpotIds);
+        var removed = await spotRepository.RemoveOrphanSpotsAsync(DEFAULT_LOT_ID, validSpotIds);
         if (removed > 0)
             logger.Info("ParkingLotApp", $"Eliminados {removed} spot(s) huérfanos no presentes en hardware.json");
 
-        var lot = await repository.GetParkingLotByIdAsync(DEFAULT_LOT_ID);
+        var lot = await parkingLotRepository.GetParkingLotByIdAsync(DEFAULT_LOT_ID);
         if (lot is null)
         {
             logger.Error("ParkingLotApp", $"No se encontró el parqueadero '{DEFAULT_LOT_ID}' en la BD.");
@@ -83,14 +98,14 @@ public sealed class ParkingLotApp
         {
             spot.OccupancyChanged += evt =>
             {
-                _ = repository.UpdateSpotStatusAsync(evt.SpotId, evt.IsOccupied);
+                _ = spotRepository.UpdateSpotStatusAsync(evt.SpotId, evt.IsOccupied);
             };
         }
 
-        ICapacityService capacityService = new CapacityService(lot, logger);
-        IAlertService alertService = new AlertService(logger, repository);
+        ICapacityService capacityService = new CapacityService(lot, spotRepository, logger);
+        IAlertService alertService = new AlertService(logger, alertRepository);
         IAccessPolicy accessPolicy = new AlwaysAllowPolicy();
-        var gateController = new GateController(capacityService, alertService, accessPolicy, logger);
+        var gateController = new GateController(spotRepository, requestRepository, capacityService, alertService, accessPolicy, logger);
 
         gateController.RegisterGate(ENTRY_GATE_ID, new Gate(ENTRY_GATE_ID, GateType.ENTRY, ENTRY_GATE_PIN, ENTRY_GATE_ACTUATOR_ID, dispatcher, logger));
         gateController.RegisterGate(EXIT_GATE_ID, new Gate(EXIT_GATE_ID, GateType.EXIT, EXIT_GATE_PIN, EXIT_GATE_ACTUATOR_ID, dispatcher, logger));

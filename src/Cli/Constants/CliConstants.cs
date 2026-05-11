@@ -7,7 +7,7 @@ public static class CliConstants
     public const int MONITOR_POLL_DELAY_MS = 1000;
 
     public const string DEFAULT_LOT_ID = "LOT-01";
-    public const string DB_FILE_NAME = "smartparkingdb.db";
+    public const string DB_FILE_NAME = "smartparkinglot.db";
     public const string DB_FOLDER_NAME = "data";
     public const string ENTRY_GATE_ID = "G-01";
     public const string EXIT_GATE_ID = "G-02";
