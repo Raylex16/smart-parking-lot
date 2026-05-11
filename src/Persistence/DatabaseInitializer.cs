@@ -122,45 +122,19 @@ public class DatabaseInitializer
 
         try
         {
-            var lotId = "LOT-01";
-            using (var command = connection.CreateCommand())
-            {
-                command.Transaction = transaction;
-                command.CommandText = """
-                    INSERT INTO ParkingLots (Id, Name, Mode)
-                    VALUES (@Id, @Name, @Mode);
-                """;
-                command.Parameters.AddWithValue("@Id", lotId);
-                command.Parameters.AddWithValue("@Name", "Campus Barcelona");
-                command.Parameters.AddWithValue("@Mode", "AUTOMATIC");
-                await command.ExecuteNonQueryAsync();
-            }
-
-            var spots = new[]
-            {
-                ("A1", "Zona-A Fila-1", "Estándar", "Planta Baja"),
-                ("A2", "Zona-A Fila-2", "Estándar", "Planta Baja"),
-                ("A3", "Zona-A Fila-3", "Estándar", "Planta Baja"),
-            };
-
-            foreach (var (spotId, address, type, floor) in spots)
-            {
-                using var command = connection.CreateCommand();
-                command.Transaction = transaction;
-                command.CommandText = """
-                    INSERT INTO ParkingSpots (Id, LotId, Address, Type, Floor, IsOccupied)
-                    VALUES (@Id, @LotId, @Address, @Type, @Floor, 0);
-                """;
-                command.Parameters.AddWithValue("@Id", spotId);
-                command.Parameters.AddWithValue("@LotId", lotId);
-                command.Parameters.AddWithValue("@Address", address);
-                command.Parameters.AddWithValue("@Type", type);
-                command.Parameters.AddWithValue("@Floor", floor);
-                await command.ExecuteNonQueryAsync();
-            }
+            using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = """
+                INSERT INTO ParkingLots (Id, Name, Mode)
+                VALUES (@Id, @Name, @Mode);
+            """;
+            command.Parameters.AddWithValue("@Id", "LOT-01");
+            command.Parameters.AddWithValue("@Name", "Campus Barcelona");
+            command.Parameters.AddWithValue("@Mode", "AUTOMATIC");
+            await command.ExecuteNonQueryAsync();
 
             await transaction.CommitAsync();
-            _logger.Info(LogSource, "Schema creado y seeding completado exitosamente");
+            _logger.Info(LogSource, "Lot inicial sembrado. Los spots se crean desde hardware.json en arranque.");
         }
         catch (Exception ex)
         {
