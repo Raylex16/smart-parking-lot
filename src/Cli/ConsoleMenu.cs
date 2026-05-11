@@ -4,12 +4,26 @@ using SmartParkingLot.Core;
 using SmartParkingLot.Core.Events;
 using SmartParkingLot.Core.Interfaces;
 using SmartParkingLot.Hardware;
+using Spectre.Console;
 
 namespace SmartParkingLot.Cli;
 
 public class ConsoleMenu
 {
     private const int RECENT_LOG_LINES = 50;
+
+    private const string OPT_ENTRY    = "Solicitar entrada de vehículo";
+    private const string OPT_EXIT_VEH = "Solicitar salida de vehículo";
+    private const string OPT_SPOT     = "Actualizar estado de un espacio (sensor manual)";
+    private const string OPT_STATUS   = "Ver estado del parqueadero";
+    private const string OPT_HISTORY  = "Ver historial de un vehículo";
+    private const string OPT_SENSOR   = "Ver lecturas de un sensor";
+    private const string OPT_DEVICE   = "Ver acciones de un dispositivo";
+    private const string OPT_MONITOR  = "Monitoreo en tiempo real (Arduino)";
+    private const string OPT_SPOTS_DB = "Ver estado de espacios (BD)";
+    private const string OPT_LOGS     = "Ver logs recientes";
+    private const string OPT_SIMULATE = "Simular sensor de puerta (IR)";
+    private const string OPT_QUIT     = "Salir";
 
     private readonly ParkingLot _lot;
     private readonly GateController _gateController;
@@ -53,81 +67,80 @@ public class ConsoleMenu
     {
         while (true)
         {
-            PrintMenu();
-            Console.Write("\nSeleccione una opción: ");
-            var choice = Console.ReadLine()?.Trim();
+            RenderHeader();
+
+            var choice = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("[bold yellow]¿Qué desea hacer?[/]")
+                    .PageSize(14)
+                    .HighlightStyle(new Style(Color.Green, decoration: Decoration.Bold))
+                    .AddChoices(
+                        OPT_ENTRY, OPT_EXIT_VEH, OPT_SPOT, OPT_STATUS,
+                        OPT_HISTORY, OPT_SENSOR, OPT_DEVICE, OPT_MONITOR,
+                        OPT_SPOTS_DB, OPT_LOGS, OPT_SIMULATE, OPT_QUIT));
+
+            if (choice == OPT_QUIT)
+            {
+                AnsiConsole.MarkupLine("[grey]Saliendo...[/]");
+                return;
+            }
+
+            AnsiConsole.Clear();
 
             try
             {
                 switch (choice)
                 {
-                    case "1": await HandleEntryAsync(); break;
-                    case "2": await HandleExitAsync(); break;
-                    case "3": await HandleManualSpotReadingAsync(); break;
-                    case "4": ShowParkingStatus(); break;
-                    case "5": await ShowVehicleHistoryAsync(); break;
-                    case "6": await ShowSensorReadingsAsync(); break;
-                    case "7": await ShowDeviceActionsAsync(); break;
-                    case "8": RunLiveMonitoring(); break;
-                    case "9": await ShowSpotsFromDbAsync(); break;
-                    case "10": ShowRecentLogs(); break;
-                    case "11": SimulateGateSensor(); break;
-                    case "0":
-                        Console.WriteLine("Saliendo...");
-                        return;
-                    default:
-                        Console.WriteLine("Opción inválida.");
-                        break;
+                    case OPT_ENTRY:    await HandleEntryAsync();             break;
+                    case OPT_EXIT_VEH: await HandleExitAsync();              break;
+                    case OPT_SPOT:     await HandleManualSpotReadingAsync(); break;
+                    case OPT_STATUS:   ShowParkingStatus();                  break;
+                    case OPT_HISTORY:  await ShowVehicleHistoryAsync();      break;
+                    case OPT_SENSOR:   await ShowSensorReadingsAsync();      break;
+                    case OPT_DEVICE:   await ShowDeviceActionsAsync();       break;
+                    case OPT_MONITOR:  RunLiveMonitoring();                  break;
+                    case OPT_SPOTS_DB: await ShowSpotsFromDbAsync();         break;
+                    case OPT_LOGS:     ShowRecentLogs();                     break;
+                    case OPT_SIMULATE: SimulateGateSensor();                 break;
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] {ex.Message}");
+                AnsiConsole.MarkupLine($"[bold red][[ERROR]][/] {ex.Message.EscapeMarkup()}");
             }
 
-            Console.WriteLine("\nPresione ENTER para continuar...");
+            AnsiConsole.MarkupLine("\n[grey dim]Presione ENTER para continuar...[/]");
             Console.ReadLine();
         }
     }
 
-    private void PrintMenu()
+    private void RenderHeader()
     {
-        Console.Clear();
-        Console.WriteLine("╔══════════════════════════════════════════════════╗");
-        Console.WriteLine("║          Smart Parking Lot — Menú                ║");
-        Console.WriteLine("╚══════════════════════════════════════════════════╝");
-        Console.WriteLine($"  Parqueadero : {_lot.Name} ({_lot.Id})");
-        Console.WriteLine($"  Modo        : {_lot.Mode}");
-        Console.WriteLine($"  Espacios    : {_lot.TotalSpots} totales | {_lot.AvailableSpots} disponibles");
-        Console.WriteLine("  # -> No implementado en esta demo");
-        Console.WriteLine("  1. # Solicitar entrada de vehículo");
-        Console.WriteLine("  2. # Solicitar salida de vehículo");
-        Console.WriteLine("  3. # Actualizar estado de un espacio (sensor manual)");
-        Console.WriteLine("  4. Ver estado del parqueadero");
-        Console.WriteLine("  5. # Ver historial de un vehículo");
-        Console.WriteLine("  6. Ver lecturas de un sensor");
-        Console.WriteLine("  7. # Ver acciones de un dispositivo");
-        Console.WriteLine("  8. Monitoreo en tiempo real (Arduino)");
-        Console.WriteLine("  9. Ver estado de espacios");
-        Console.WriteLine("  10. Ver logs recientes");
-        Console.WriteLine("  11. Simular sensor de puerta (IR)");
-        Console.WriteLine("  0. Salir");
+        AnsiConsole.Clear();
+        AnsiConsole.Write(new Rule("[bold blue] Smart Parking Lot [/]").RuleStyle("blue dim"));
+
+        var grid = new Grid().AddColumn().AddColumn().AddColumn();
+        grid.AddRow(
+            $"[grey]Parqueadero:[/] [white]{_lot.Name.EscapeMarkup()}[/] [grey]({_lot.Id.EscapeMarkup()})[/]",
+            $"[grey]Modo:[/] [yellow]{_lot.Mode}[/]",
+            $"[grey]Disponibles:[/] [green]{_lot.AvailableSpots}[/][grey]/[/][white]{_lot.TotalSpots}[/]");
+
+        AnsiConsole.Write(grid);
+        AnsiConsole.WriteLine();
     }
 
     private async Task HandleEntryAsync()
     {
-        Console.Write("Placa del vehículo: ");
-        var plate = Console.ReadLine()?.Trim();
-        if (string.IsNullOrWhiteSpace(plate))
-        {
-            Console.WriteLine("Placa vacía.");
-            return;
-        }
+        AnsiConsole.Write(new Rule("[bold]Entrada de vehículo[/]").LeftJustified());
+
+        var plate = AnsiConsole.Prompt(
+            new TextPrompt<string>("[green]?[/] Placa del vehículo:")
+                .Validate(p => !string.IsNullOrWhiteSpace(p)
+                    ? ValidationResult.Success()
+                    : ValidationResult.Error("[red]La placa no puede estar vacía.[/]")));
 
         var occupiedBefore = _lot.GetSpots()
-            .Where(s => s.IsOccupied)
-            .Select(s => s.Id)
-            .ToHashSet();
+            .Where(s => s.IsOccupied).Select(s => s.Id).ToHashSet();
 
         var gateReading = new GateSensorReading(plate, ENTRY_GATE_ID);
         _gateSensor.CaptureReading(gateReading);
@@ -143,27 +156,24 @@ public class ConsoleMenu
         {
             var newlyOccupied = _lot.GetSpots()
                 .FirstOrDefault(s => s.IsOccupied && !occupiedBefore.Contains(s.Id));
-
             if (newlyOccupied is not null)
-            {
                 await _repository.UpdateSpotStatusAsync(newlyOccupied.Id, true);
-            }
-
             await _repository.LogDeviceActionAsync($"GATE-{ENTRY_GATE_ID}", "OPEN", DateTime.Now);
         }
 
-        Console.WriteLine($"\n[Resultado] {(request.Approved ? "CONCEDIDO ✓" : "DENEGADO ✗")} | Disponibles: {_lot.AvailableSpots}");
+        var result = request.Approved ? "[bold green]✓ CONCEDIDO[/]" : "[bold red]✗ DENEGADO[/]";
+        AnsiConsole.MarkupLine($"\nResultado: {result} | Disponibles: [yellow]{_lot.AvailableSpots}[/]");
     }
 
     private async Task HandleExitAsync()
     {
-        Console.Write("Placa del vehículo: ");
-        var plate = Console.ReadLine()?.Trim();
-        if (string.IsNullOrWhiteSpace(plate))
-        {
-            Console.WriteLine("Placa vacía.");
-            return;
-        }
+        AnsiConsole.Write(new Rule("[bold]Salida de vehículo[/]").LeftJustified());
+
+        var plate = AnsiConsole.Prompt(
+            new TextPrompt<string>("[green]?[/] Placa del vehículo:")
+                .Validate(p => !string.IsNullOrWhiteSpace(p)
+                    ? ValidationResult.Success()
+                    : ValidationResult.Error("[red]La placa no puede estar vacía.[/]")));
 
         var request = new ExitRequest(plate) { GateId = EXIT_GATE_ID };
         await _gateController.HandleRequestAsync(request);
@@ -172,33 +182,34 @@ public class ConsoleMenu
         await _repository.LogRequestAsync(requestId, plate, "EXIT", _lot.Id, request.Timestamp, approved: true);
         await _repository.LogDeviceActionAsync($"GATE-{EXIT_GATE_ID}", "OPEN", DateTime.Now);
 
-        Console.WriteLine($"\n[Resultado] Puerta de salida abierta para '{plate}'.");
-        Console.WriteLine("[Nota] La liberación del spot la detecta el sensor (use opción 3).");
+        AnsiConsole.MarkupLine($"\n[bold green]✓[/] Puerta de salida abierta para '[yellow]{plate.EscapeMarkup()}[/]'.");
+        AnsiConsole.MarkupLine("[grey]La liberación del spot la detecta el sensor.[/]");
     }
 
     private async Task HandleManualSpotReadingAsync()
     {
-        Console.WriteLine("Espacios disponibles:");
-        foreach (var s in _lot.GetSpots())
-            Console.WriteLine($"  {s.Id} -> {(s.IsOccupied ? "OCUPADO" : "LIBRE")}");
+        AnsiConsole.Write(new Rule("[bold]Sensor manual de espacio[/]").LeftJustified());
 
-        Console.Write("\nID del espacio: ");
-        var spotId = Console.ReadLine()?.Trim();
-        if (string.IsNullOrWhiteSpace(spotId))
-        {
-            Console.WriteLine("ID vacío.");
-            return;
-        }
+        var spotsTable = new Table().Border(TableBorder.Rounded).Title("[grey]Espacios actuales[/]");
+        spotsTable.AddColumn(new TableColumn("ID").Centered());
+        spotsTable.AddColumn(new TableColumn("Estado").Centered());
+        foreach (var s in _lot.GetSpots())
+            spotsTable.AddRow(s.Id.EscapeMarkup(), s.IsOccupied ? "[red]OCUPADO[/]" : "[green]LIBRE[/]");
+        AnsiConsole.Write(spotsTable);
+
+        var spotId = AnsiConsole.Prompt(
+            new TextPrompt<string>("[green]?[/] ID del espacio:")
+                .Validate(s => !string.IsNullOrWhiteSpace(s)
+                    ? ValidationResult.Success()
+                    : ValidationResult.Error("[red]El ID no puede estar vacío.[/]")));
 
         if (!_spotSensors.TryGetValue(spotId, out var sensor))
         {
-            Console.WriteLine($"No hay sensor registrado para el espacio '{spotId}'.");
+            AnsiConsole.MarkupLine($"[red]No hay sensor registrado para el espacio '{spotId.EscapeMarkup()}'.[/]");
             return;
         }
 
-        Console.Write("¿Ocupado? (s/n): ");
-        var answer = Console.ReadLine()?.Trim().ToLowerInvariant();
-        var isOccupied = answer == "s" || answer == "si" || answer == "sí" || answer == "y" || answer == "yes";
+        var isOccupied = AnsiConsole.Confirm("¿Marcar como ocupado?");
 
         var reading = new SpotSensorReading(spotId, isOccupied);
         sensor.CaptureReading(reading);
@@ -212,132 +223,173 @@ public class ConsoleMenu
             RawValue: rawValue,
             Timestamp: DateTimeOffset.Now));
 
-        Console.WriteLine($"\n[Resultado] Evento publicado — Espacio '{spotId}' → {(isOccupied ? "OCUPADO" : "LIBRE")}.");
+        var stateLabel = isOccupied ? "[red]OCUPADO[/]" : "[green]LIBRE[/]";
+        AnsiConsole.MarkupLine($"\n[bold green]✓[/] Evento publicado — Espacio '[yellow]{spotId.EscapeMarkup()}[/]' → {stateLabel}.");
     }
 
     private void ShowParkingStatus()
     {
-        Console.WriteLine($"\nEstado de '{_lot.Name}' ({_lot.Id})");
-        Console.WriteLine($"  Disponibles: {_lot.AvailableSpots} / {_lot.TotalSpots}\n");
+        AnsiConsole.Write(new Rule("[bold]Estado del parqueadero[/]").LeftJustified());
+
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .Title($"[bold]{_lot.Name.EscapeMarkup()}[/] [grey]({_lot.Id.EscapeMarkup()})[/]");
+
+        table.AddColumn(new TableColumn("ID").Centered());
+        table.AddColumn(new TableColumn("Estado").Centered());
+
         foreach (var spot in _lot.GetSpots())
-            Console.WriteLine($"  {spot}");
+            table.AddRow(spot.Id.EscapeMarkup(), spot.IsOccupied ? "[red]● OCUPADO[/]" : "[green]○ LIBRE[/]");
+
+        AnsiConsole.Write(table);
+        AnsiConsole.MarkupLine($"\n[grey]Disponibles:[/] [green]{_lot.AvailableSpots}[/] [grey]/[/] [white]{_lot.TotalSpots}[/]");
     }
 
     private async Task ShowVehicleHistoryAsync()
     {
-        Console.Write("Placa del vehículo: ");
-        var plate = Console.ReadLine()?.Trim();
-        if (string.IsNullOrWhiteSpace(plate))
+        AnsiConsole.Write(new Rule("[bold]Historial de vehículo[/]").LeftJustified());
+
+        var plate = AnsiConsole.Prompt(
+            new TextPrompt<string>("[green]?[/] Placa del vehículo:")
+                .Validate(p => !string.IsNullOrWhiteSpace(p)
+                    ? ValidationResult.Success()
+                    : ValidationResult.Error("[red]La placa no puede estar vacía.[/]")));
+
+        var history = (await _repository.GetRequestHistoryAsync(plate)).ToList();
+
+        if (history.Count == 0)
         {
-            Console.WriteLine("Placa vacía.");
+            AnsiConsole.MarkupLine($"[yellow]No hay historial para '{plate.EscapeMarkup()}'.[/]");
             return;
         }
 
-        var history = await _repository.GetRequestHistoryAsync(plate);
-        var list = history.ToList();
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .Title($"Historial de [bold yellow]{plate.EscapeMarkup()}[/] ({history.Count} registro(s))");
 
-        if (list.Count == 0)
+        table.AddColumn("Fecha / Hora");
+        table.AddColumn(new TableColumn("Tipo").Centered());
+        table.AddColumn(new TableColumn("Estado").Centered());
+        table.AddColumn("ID Solicitud");
+
+        foreach (var r in history)
         {
-            Console.WriteLine($"No hay historial para '{plate}'.");
-            return;
+            var approved = r.Approved ? "[bold green]✓ APROBADO[/]" : "[bold red]✗ DENEGADO[/]";
+            table.AddRow(
+                r.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"),
+                r.RequestType,
+                approved,
+                r.RequestId.EscapeMarkup());
         }
 
-        Console.WriteLine($"\nHistorial de '{plate}' ({list.Count} registro(s)):");
-        foreach (var r in list)
-        {
-            var approved = r.Approved ? "✓ APROBADO" : "✗ DENEGADO";
-            Console.WriteLine($"  [{r.Timestamp:yyyy-MM-dd HH:mm:ss}] {r.RequestType,-5} {approved}  ({r.RequestId})");
-        }
+        AnsiConsole.Write(table);
     }
 
     private async Task ShowSensorReadingsAsync()
     {
-        Console.WriteLine("Sensores conocidos:");
-        Console.WriteLine($"  {_gateSensor.Id}  (puerta)");
-        foreach (var s in _spotSensors.Values)
-            Console.WriteLine($"  {s.Id}  (spot)");
+        AnsiConsole.Write(new Rule("[bold]Lecturas de sensor[/]").LeftJustified());
 
-        Console.Write("\nID del sensor: ");
-        var sensorId = Console.ReadLine()?.Trim();
-        if (string.IsNullOrWhiteSpace(sensorId))
-        {
-            Console.WriteLine("ID vacío.");
-            return;
-        }
+        var choices = new List<string> { _gateSensor.Id };
+        choices.AddRange(_spotSensors.Values.Select(s => s.Id));
+
+        var sensorId = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("[green]?[/] Seleccione un sensor:")
+                .AddChoices(choices));
 
         var readings = (await _repository.GetSensorReadingsAsync(sensorId)).ToList();
 
         if (readings.Count == 0)
         {
-            Console.WriteLine($"No hay lecturas para '{sensorId}'.");
+            AnsiConsole.MarkupLine($"[yellow]No hay lecturas para '{sensorId.EscapeMarkup()}'.[/]");
             return;
         }
 
-        Console.WriteLine($"\nLecturas de '{sensorId}' ({readings.Count} registro(s)):");
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .Title($"Lecturas de [bold]{sensorId.EscapeMarkup()}[/] ({readings.Count} registro(s))");
+
+        table.AddColumn("Fecha / Hora");
+        table.AddColumn(new TableColumn("Valor").Centered());
+        table.AddColumn("ID Lectura");
+
         foreach (var r in readings)
-            Console.WriteLine($"  [{r.Timestamp:yyyy-MM-dd HH:mm:ss}] Valor: {r.Value}  ({r.Id})");
+            table.AddRow(r.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"), r.Value.EscapeMarkup(), r.Id.EscapeMarkup());
+
+        AnsiConsole.Write(table);
     }
 
     private async Task ShowDeviceActionsAsync()
     {
-        Console.WriteLine("Dispositivos conocidos:");
-        Console.WriteLine($"  GATE-{ENTRY_GATE_ID}");
-        Console.WriteLine($"  GATE-{EXIT_GATE_ID}");
+        AnsiConsole.Write(new Rule("[bold]Acciones de dispositivo[/]").LeftJustified());
 
-        Console.Write("\nID del dispositivo: ");
-        var deviceId = Console.ReadLine()?.Trim();
-        if (string.IsNullOrWhiteSpace(deviceId))
-        {
-            Console.WriteLine("ID vacío.");
-            return;
-        }
+        var deviceId = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("[green]?[/] Seleccione un dispositivo:")
+                .AddChoices($"GATE-{ENTRY_GATE_ID}", $"GATE-{EXIT_GATE_ID}"));
 
         var actions = (await _repository.GetDeviceActionsAsync(deviceId)).ToList();
 
         if (actions.Count == 0)
         {
-            Console.WriteLine($"No hay acciones para '{deviceId}'.");
+            AnsiConsole.MarkupLine($"[yellow]No hay acciones para '{deviceId.EscapeMarkup()}'.[/]");
             return;
         }
 
-        Console.WriteLine($"\nAcciones de '{deviceId}' ({actions.Count} registro(s)):");
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .Title($"Acciones de [bold]{deviceId.EscapeMarkup()}[/] ({actions.Count} registro(s))");
+
+        table.AddColumn("Fecha / Hora");
+        table.AddColumn(new TableColumn("Acción").Centered());
+        table.AddColumn("ID");
+
         foreach (var a in actions)
-            Console.WriteLine($"  [{a.Timestamp:yyyy-MM-dd HH:mm:ss}] {a.Action}  ({a.Id})");
+            table.AddRow(a.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"), a.Action.EscapeMarkup(), a.Id.EscapeMarkup());
+
+        AnsiConsole.Write(table);
     }
 
     private async Task ShowSpotsFromDbAsync()
     {
+        AnsiConsole.Write(new Rule("[bold]Espacios en base de datos[/]").LeftJustified());
+
         var spots = (await _repository.GetSpotsByLotIdAsync(_lot.Id)).ToList();
 
         if (spots.Count == 0)
         {
-            Console.WriteLine("No hay espacios registrados en la BD.");
+            AnsiConsole.MarkupLine("[yellow]No hay espacios registrados en la BD.[/]");
             return;
         }
 
-        Console.WriteLine($"\nEspacios de '{_lot.Name}' en BD ({spots.Count} espacio(s)):");
-        Console.WriteLine($"  {"ID",-8} {"Dirección",-28} Estado");
-        Console.WriteLine($"  {new string('─', 50)}");
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .Title($"[bold]{_lot.Name.EscapeMarkup()}[/] — {spots.Count} espacio(s)");
+
+        table.AddColumn(new TableColumn("ID").Centered());
+        table.AddColumn("Dirección");
+        table.AddColumn(new TableColumn("Estado").Centered());
 
         foreach (var s in spots)
-            Console.WriteLine($"  {s.Id,-8} {s.Address,-28} {(s.IsOccupied ? "OCUPADO" : "LIBRE")}");
+            table.AddRow(s.Id.EscapeMarkup(), s.Address.EscapeMarkup(), s.IsOccupied ? "[red]● OCUPADO[/]" : "[green]○ LIBRE[/]");
+
+        AnsiConsole.Write(table);
 
         var occupied = spots.Count(s => s.IsOccupied);
-        Console.WriteLine($"\n  Total: {spots.Count} | Ocupados: {occupied} | Libres: {spots.Count - occupied}");
+        AnsiConsole.MarkupLine($"\n[grey]Total:[/] {spots.Count} | [red]Ocupados:[/] {occupied} | [green]Libres:[/] {spots.Count - occupied}");
     }
 
     private void RunLiveMonitoring()
     {
-        Console.WriteLine("\nMonitoreo en tiempo real — los logs de Arduino se mostrarán ahora. Presione cualquier tecla para salir.\n");
+        AnsiConsole.Write(new Rule("[bold]Monitoreo en tiempo real[/]").LeftJustified());
+        AnsiConsole.MarkupLine("[grey]Los logs de Arduino se mostrarán ahora. Presione cualquier tecla para salir.[/]\n");
 
         if (!_bridge.IsListening)
-        {
             _bridge.StartListening();
-        }
 
         if (!_bridge.IsListening)
         {
-            Console.WriteLine("[Monitoreo] Arduino no disponible.");
+            AnsiConsole.MarkupLine("[yellow]Arduino no disponible.[/]");
             return;
         }
 
@@ -345,25 +397,21 @@ public class ConsoleMenu
         _consoleLogger.MinimumLevel = LogLevel.Debug;
 
         while (!Console.KeyAvailable)
-        {
             Thread.Sleep(MONITOR_POLL_DELAY_MS);
-        }
 
         Console.ReadKey(intercept: true);
         _consoleLogger.MinimumLevel = previousLevel;
-        Console.WriteLine("\nMonitoreo detenido.");
+        AnsiConsole.MarkupLine("\n[grey]Monitoreo detenido.[/]");
     }
 
     private void SimulateGateSensor()
     {
-        Console.WriteLine($"Puertas configuradas: {ENTRY_GATE_ID} (entrada) | {EXIT_GATE_ID} (salida)");
-        Console.Write($"\nID de la puerta: ");
-        var gateId = Console.ReadLine()?.Trim();
-        if (string.IsNullOrWhiteSpace(gateId))
-        {
-            Console.WriteLine("ID vacío.");
-            return;
-        }
+        AnsiConsole.Write(new Rule("[bold]Simular sensor de puerta (IR)[/]").LeftJustified());
+
+        var gateId = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("[green]?[/] Seleccione la puerta:")
+                .AddChoices(ENTRY_GATE_ID, EXIT_GATE_ID));
 
         var irSensorId = gateId switch
         {
@@ -372,29 +420,25 @@ public class ConsoleMenu
             _ => null
         };
 
-        if (irSensorId is null)
-        {
-            Console.WriteLine($"Puerta '{gateId}' no reconocida. Use {ENTRY_GATE_ID} o {EXIT_GATE_ID}.");
-            return;
-        }
-
         _bus.Publish(new SensorReadingReceived(
-            SensorId: irSensorId,
+            SensorId: irSensorId!,
             SensorType: "IR",
             RawValue: "1",
             Timestamp: DateTimeOffset.Now));
 
-        Console.WriteLine($"\n[Simulado] Evento publicado: {irSensorId} → 1");
+        AnsiConsole.MarkupLine($"\n[bold green]✓[/] Evento publicado: [yellow]{irSensorId!.EscapeMarkup()}[/] → 1");
     }
 
     // TODO: a futuro permitir seleccionar fecha o rango de fechas para mostrar logs históricos.
     private void ShowRecentLogs()
     {
+        AnsiConsole.Write(new Rule("[bold]Logs recientes[/]").LeftJustified());
+
         var path = _fileLogger.GetCurrentLogFilePath();
 
         if (!File.Exists(path))
         {
-            Console.WriteLine($"\nNo hay archivo de log para hoy ({path}).");
+            AnsiConsole.MarkupLine($"[yellow]No hay archivo de log para hoy ({Path.GetFileName(path).EscapeMarkup()}).[/]");
             return;
         }
 
@@ -406,8 +450,8 @@ public class ConsoleMenu
             tail.Enqueue(line);
         }
 
-        Console.WriteLine($"\nÚltimas {tail.Count} línea(s) de '{Path.GetFileName(path)}':\n");
+        AnsiConsole.MarkupLine($"[grey]Últimas {tail.Count} línea(s) de '[/][white]{Path.GetFileName(path).EscapeMarkup()}[/][grey]':[/]\n");
         foreach (var line in tail)
-            Console.WriteLine($"  {line}");
+            AnsiConsole.MarkupLine($"  [grey]{line.EscapeMarkup()}[/]");
     }
 }
