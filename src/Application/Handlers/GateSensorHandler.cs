@@ -8,20 +8,20 @@ public sealed class GateSensorHandler
 {
     private const string LogSource = "GateSensorHandler";
 
-    private readonly GateController _gateController;
+    private readonly IRequestDispatcher _dispatcher;
     private readonly ILicensePlateRecognizer _plateRecognizer;
     private readonly IDisplay _display;
     private readonly ILogger _logger;
     private readonly IReadOnlyDictionary<string, (string GateId, GateType Type)> _gateSensorMapping;
 
     public GateSensorHandler(
-        GateController gateController,
+        IRequestDispatcher dispatcher,
         ILicensePlateRecognizer plateRecognizer,
         IDisplay display,
         ILogger logger,
         IReadOnlyDictionary<string, (string GateId, GateType Type)> gateSensorMapping)
     {
-        _gateController = gateController;
+        _dispatcher = dispatcher;
         _plateRecognizer = plateRecognizer;
         _display = display;
         _logger = logger;
@@ -40,13 +40,13 @@ public sealed class GateSensorHandler
         {
             case GateType.ENTRY:
                 var entry = new EntryRequest(plate) { GateId = gate.GateId };
-                _gateController.HandleRequest(entry);
+                _dispatcher.HandleRequest(entry);
                 _display.ShowMessage(entry.Approved ? "BIENVENIDO" : "LLENO");
                 break;
 
             case GateType.EXIT:
                 var exit = new ExitRequest(plate) { GateId = gate.GateId };
-                _gateController.HandleRequest(exit);
+                _dispatcher.HandleRequest(exit);
                 _display.ShowMessage("GRACIAS");
                 break;
 

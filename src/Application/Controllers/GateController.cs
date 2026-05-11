@@ -3,7 +3,7 @@ using SmartParkingLot.Core.Interfaces;
 
 namespace SmartParkingLot.Application;
 
-public class GateController : IGateRequestHandler
+public class GateController : IGateRequestHandler, IRequestDispatcher
 {
     private const string LogSource = "GateController";
 
