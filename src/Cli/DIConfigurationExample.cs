@@ -68,12 +68,4 @@ public class DIConfigurationExample
     }
 }
 
-// Ventajas de esta configuración:
-// ✅ Una sola fuente de verdad para la configuración de dependencias
-// ✅ Fácil de testear (reemplaza servicios en tests)
-// ✅ Servicios registrados solo si se usan
-// ✅ Ciclo de vida explícito (AddScoped, AddSingleton, etc.)
-// ✅ DbContext gestionado automáticamente
-// ✅ Migraciones aplicadas automáticamente
-// ✅ Segregación clara de responsabilidades (cada servicio depende de lo que necesita)
 */
