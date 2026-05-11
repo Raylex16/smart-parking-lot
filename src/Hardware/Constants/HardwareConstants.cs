@@ -6,4 +6,5 @@ public static class HardwareConstants
     public const int MIN_ANGLE = 0;
     public const int DEFAULT_PIN = 13;
     public const int SERIAL_TIMEOUT_MS = 2000;
+    public const int GATE_AUTO_CLOSE_MS = 5000;
 }

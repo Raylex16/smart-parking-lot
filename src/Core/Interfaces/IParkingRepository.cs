@@ -17,6 +17,9 @@ public interface IParkingRepository
     Task EnsureSpotExistsAsync(string spotId, string lotId, string address, string type, string floor,
         CancellationToken ct = default);
 
+    Task<int> RemoveOrphanSpotsAsync(string lotId, IEnumerable<string> validSpotIds,
+        CancellationToken ct = default);
+
     Task<bool> LogRequestAsync(string requestId, string vehiclePlate, string requestType, string lotId,
         DateTime timestamp, bool approved, string? releasedSpotId = null, CancellationToken ct = default);
 

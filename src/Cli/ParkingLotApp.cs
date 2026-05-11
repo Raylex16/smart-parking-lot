@@ -1,8 +1,10 @@
 using SmartParkingLot.Application;
+using SmartParkingLot.Application.Display;
 using SmartParkingLot.Application.Handlers;
 using SmartParkingLot.Application.Infrastructure;
 using SmartParkingLot.Application.Logging;
 using SmartParkingLot.Application.Policies;
+using SmartParkingLot.Application.Recognition;
 using SmartParkingLot.Application.UseCases;
 using SmartParkingLot.Core;
 using SmartParkingLot.Core.Events;
@@ -38,6 +40,11 @@ public sealed class ParkingLotApp
             await repository.EnsureSpotExistsAsync(
                 mapping.SpotId, DEFAULT_LOT_ID,
                 mapping.Address, mapping.Type, mapping.Floor);
+
+        var validSpotIds = hwConfig.Sensors.Select(m => m.SpotId).ToList();
+        var removed = await repository.RemoveOrphanSpotsAsync(DEFAULT_LOT_ID, validSpotIds);
+        if (removed > 0)
+            logger.Info("ParkingLotApp", $"Eliminados {removed} spot(s) huérfanos no presentes en hardware.json");
 
         var lot = await repository.GetParkingLotByIdAsync(DEFAULT_LOT_ID);
         if (lot is null)
@@ -85,10 +92,20 @@ public sealed class ParkingLotApp
         IAccessPolicy accessPolicy = new AlwaysAllowPolicy();
         var gateController = new GateController(capacityService, alertService, accessPolicy, logger);
 
-        gateController.RegisterGate(ENTRY_GATE_ID, new Gate(ENTRY_GATE_ID, GateType.ENTRY, ENTRY_GATE_PIN, logger));
-        gateController.RegisterGate(EXIT_GATE_ID, new Gate(EXIT_GATE_ID, GateType.EXIT, EXIT_GATE_PIN, logger));
+        gateController.RegisterGate(ENTRY_GATE_ID, new Gate(ENTRY_GATE_ID, GateType.ENTRY, ENTRY_GATE_PIN, ENTRY_GATE_ACTUATOR_ID, dispatcher, logger));
+        gateController.RegisterGate(EXIT_GATE_ID, new Gate(EXIT_GATE_ID, GateType.EXIT, EXIT_GATE_PIN, EXIT_GATE_ACTUATOR_ID, dispatcher, logger));
+
+        IDisplay display = new LcdDisplay(dispatcher);
+        var lcdCapacityHandler = new LcdCapacityHandler(lot, display);
+        foreach (var spot in lot.GetSpots())
+            spot.OccupancyChanged += lcdCapacityHandler.Handle;
+
+        ILicensePlateRecognizer plateRecognizer = new PlaceholderPlateRecognizer();
+        var gateSensorHandler = new GateSensorHandler(gateController, plateRecognizer, display, logger, hwConfig.BuildGateSensorMapping());
+        bus.Subscribe<SensorReadingReceived>(gateSensorHandler.Handle);
 
         bridge.StartListening();
+        display.ShowCapacity(lot.AvailableSpots, lot.TotalSpots);
 
         var menu = new ConsoleMenu(lot, gateController, capacityService, repository, bus, spotSensors, gateSensor, bridge, dispatcher, consoleLogger, fileLogger);
         await menu.RunAsync();

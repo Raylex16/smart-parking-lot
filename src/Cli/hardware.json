@@ -9,22 +9,22 @@
       "address": "Zona-A Fila-1",
       "type": "Estándar",
       "floor": "Planta Baja"
+    }
+  ],
+  "gates": [
+    {
+      "gateId": "G-01",
+      "type": "ENTRY",
+      "irSensorId": "GATE-IR1",
+      "actuatorId": "GATE1",
+      "pin": 9
     },
     {
-      "sensorId": "IR2",
-      "spotId": "A2",
-      "actuatorId": "LED2",
-      "address": "Zona-A Fila-2",
-      "type": "Estándar",
-      "floor": "Planta Baja"
-    },
-    {
-      "sensorId": "IR3",
-      "spotId": "A3",
-      "actuatorId": "LED3",
-      "address": "Zona-A Fila-3",
-      "type": "Estándar",
-      "floor": "Planta Baja"
+      "gateId": "G-02",
+      "type": "EXIT",
+      "irSensorId": "GATE-IR2",
+      "actuatorId": "GATE2",
+      "pin": 10
     }
   ]
 }

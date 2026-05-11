@@ -95,6 +95,29 @@ public class SqliteParkingRepository : IParkingRepository
                 cancellationToken: ct));
     }
 
+    public async Task<int> RemoveOrphanSpotsAsync(string lotId, IEnumerable<string> validSpotIds,
+        CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(lotId);
+        ArgumentNullException.ThrowIfNull(validSpotIds);
+
+        using var connection = GetConnection();
+        await connection.OpenAsync(ct);
+
+        var ids = validSpotIds.ToList();
+
+        var sql = ids.Count == 0
+            ? "DELETE FROM ParkingSpots WHERE LotId = @LotId;"
+            : "DELETE FROM ParkingSpots WHERE LotId = @LotId AND Id NOT IN @ValidIds;";
+
+        object parameters = ids.Count == 0
+            ? new { LotId = lotId }
+            : new { LotId = lotId, ValidIds = ids };
+
+        return await connection.ExecuteAsync(
+            new CommandDefinition(sql, parameters, cancellationToken: ct));
+    }
+
     public async Task<bool> UpdateSpotStatusAsync(string spotId, bool isOccupied, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(spotId);
