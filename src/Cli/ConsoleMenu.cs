@@ -134,7 +134,7 @@ public class ConsoleMenu
         await _repository.LogSensorReadingAsync(_gateSensor.Id, $"plate:{plate}", DateTime.Now);
 
         var request = new EntryRequest(plate) { GateId = ENTRY_GATE_ID };
-        _gateController.HandleRequest(request);
+        await _gateController.HandleRequestAsync(request);
 
         var requestId = $"REQ-{Guid.NewGuid().ToString("N")[..8]}";
         await _repository.LogRequestAsync(requestId, plate, "ENTRY", _lot.Id, request.Timestamp, request.Approved);
@@ -166,7 +166,7 @@ public class ConsoleMenu
         }
 
         var request = new ExitRequest(plate) { GateId = EXIT_GATE_ID };
-        _gateController.HandleRequest(request);
+        await _gateController.HandleRequestAsync(request);
 
         var requestId = $"REQ-{Guid.NewGuid().ToString("N")[..8]}";
         await _repository.LogRequestAsync(requestId, plate, "EXIT", _lot.Id, request.Timestamp, approved: true);

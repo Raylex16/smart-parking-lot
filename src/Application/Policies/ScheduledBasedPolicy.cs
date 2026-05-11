@@ -3,7 +3,6 @@ using SmartParkingLot.Core.Interfaces;
 
 namespace SmartParkingLot.Application.Policies;
 
-
 public class ScheduledBasedPolicy : IAccessPolicy
 {
     private readonly TimeSpan _startTime;
@@ -15,9 +14,9 @@ public class ScheduledBasedPolicy : IAccessPolicy
         _endTime = endTime;
     }
 
-    public bool CanEnter(EntryRequest request)
+    public Task<bool> CanEnterAsync(EntryRequest request)
     {
         var currentTime = DateTime.Now.TimeOfDay;
-        return currentTime >= _startTime && currentTime <= _endTime;
+        return Task.FromResult(currentTime >= _startTime && currentTime <= _endTime);
     }
 }

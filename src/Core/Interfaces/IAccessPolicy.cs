@@ -1,7 +1,6 @@
 namespace SmartParkingLot.Core.Interfaces;
 
-
 public interface IAccessPolicy
 {
-    bool CanEnter(EntryRequest request);
+    Task<bool> CanEnterAsync(EntryRequest request);
 }

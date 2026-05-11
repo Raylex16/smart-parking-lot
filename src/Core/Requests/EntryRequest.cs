@@ -9,7 +9,7 @@ public class EntryRequest : Request
     public bool Approved { get; private set; }
     public EntryRequest(string vehiclePlate) { VehiclePlate = vehiclePlate; }
 
-    public override void Execute(IGateRequestHandler handler)
+    public override async Task ExecuteAsync(IGateRequestHandler handler)
     {
         handler.Logger.Log(LogLevel.Info, LogSource,
             $"Solicitud recibida: Vehículo '{VehiclePlate}' a las {Timestamp:HH:mm:ss}");
@@ -23,7 +23,7 @@ public class EntryRequest : Request
             return;
         }
 
-        if (!handler.AccessPolicy.CanEnter(this))
+        if (!await handler.AccessPolicy.CanEnterAsync(this).ConfigureAwait(false))
         {
             Approved = false;
             handler.AlertService.GenerateAlert(new GateSensorReading(VehiclePlate, GateId));

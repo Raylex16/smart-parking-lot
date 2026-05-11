@@ -102,7 +102,7 @@ public sealed class ParkingLotApp
 
         ILicensePlateRecognizer plateRecognizer = new PlaceholderPlateRecognizer();
         var gateSensorHandler = new GateSensorHandler(gateController, plateRecognizer, display, logger, hwConfig.BuildGateSensorMapping());
-        bus.Subscribe<SensorReadingReceived>(gateSensorHandler.Handle);
+        bus.SubscribeAsync<SensorReadingReceived>(gateSensorHandler.HandleAsync, logger, "GateSensorHandler");
 
         bridge.StartListening();
         display.ShowCapacity(lot.AvailableSpots, lot.TotalSpots);

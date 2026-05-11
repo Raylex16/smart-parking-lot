@@ -8,5 +8,5 @@ public abstract class Request
     public string VehiclePlate { get; init; } = string.Empty;
     public DateTime Timestamp { get; init; } = DateTime.Now;
 
-    public abstract void Execute(IGateRequestHandler handler);
+    public abstract Task ExecuteAsync(IGateRequestHandler handler);
 }

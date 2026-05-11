@@ -3,8 +3,7 @@ using SmartParkingLot.Core.Interfaces;
 
 namespace SmartParkingLot.Application.Policies;
 
-
 public class AlwaysAllowPolicy : IAccessPolicy
 {
-    public bool CanEnter(EntryRequest request) => true;
+    public Task<bool> CanEnterAsync(EntryRequest request) => Task.FromResult(true);
 }

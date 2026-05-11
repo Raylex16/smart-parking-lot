@@ -9,10 +9,11 @@ public class ExitRequest : Request
         VehiclePlate = vehiclePlate;
     }
 
-    public override void Execute(IGateRequestHandler handler)
+    public override Task ExecuteAsync(IGateRequestHandler handler)
     {
         handler.Logger.Log(LogLevel.Info, "ExitRequest",
             $"Solicitud de salida: Vehículo '{VehiclePlate}' a las {Timestamp:HH:mm:ss}");
         handler.OpenGate(GateId);
+        return Task.CompletedTask;
     }
 }

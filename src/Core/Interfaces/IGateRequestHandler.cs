@@ -7,4 +7,5 @@ public interface IGateRequestHandler
     IAccessPolicy AccessPolicy { get; }
     ILogger Logger { get; }
     void OpenGate(string gateId);
+    Task HandleRequestAsync(Request request);
 }

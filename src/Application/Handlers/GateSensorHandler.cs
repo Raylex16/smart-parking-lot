@@ -8,27 +8,27 @@ public sealed class GateSensorHandler
 {
     private const string LogSource = "GateSensorHandler";
 
-    private readonly IRequestDispatcher _dispatcher;
+    private readonly IGateRequestHandler _handler;
     private readonly ILicensePlateRecognizer _plateRecognizer;
     private readonly IDisplay _display;
     private readonly ILogger _logger;
     private readonly IReadOnlyDictionary<string, (string GateId, GateType Type)> _gateSensorMapping;
 
     public GateSensorHandler(
-        IRequestDispatcher dispatcher,
+        IGateRequestHandler handler,
         ILicensePlateRecognizer plateRecognizer,
         IDisplay display,
         ILogger logger,
         IReadOnlyDictionary<string, (string GateId, GateType Type)> gateSensorMapping)
     {
-        _dispatcher = dispatcher;
+        _handler = handler;
         _plateRecognizer = plateRecognizer;
         _display = display;
         _logger = logger;
         _gateSensorMapping = gateSensorMapping;
     }
 
-    public void Handle(SensorReadingReceived evt)
+    public async Task HandleAsync(SensorReadingReceived evt)
     {
         if (!_gateSensorMapping.TryGetValue(evt.SensorId, out var gate)) return;
         if (evt.RawValue != "1") return;
@@ -36,17 +36,18 @@ public sealed class GateSensorHandler
         var plate = _plateRecognizer.Recognize(gate.GateId);
         _logger.Info(LogSource, $"Vehículo detectado en {gate.GateId} ({gate.Type}) → {plate}");
 
+
         switch (gate.Type)
         {
             case GateType.ENTRY:
                 var entry = new EntryRequest(plate) { GateId = gate.GateId };
-                _dispatcher.HandleRequest(entry);
+                await _handler.HandleRequestAsync(entry).ConfigureAwait(false);
                 _display.ShowMessage(entry.Approved ? "BIENVENIDO" : "LLENO");
                 break;
 
             case GateType.EXIT:
                 var exit = new ExitRequest(plate) { GateId = gate.GateId };
-                _dispatcher.HandleRequest(exit);
+                await _handler.HandleRequestAsync(exit).ConfigureAwait(false);
                 _display.ShowMessage("GRACIAS");
                 break;
 
