@@ -11,6 +11,7 @@ public class Gate : Actuator, IGate
     private readonly string _actuatorId;
     private int _angle;
     private GateType _type;
+    private CancellationTokenSource? _autoCloseCts;
 
     public Gate(string id, GateType type, int pin, string actuatorId, ICommandDispatcher dispatcher, ILogger logger)
     {
@@ -27,12 +28,12 @@ public class Gate : Actuator, IGate
         _angle = MAX_ANGLE;
         DispatchAngle();
         _logger.Info($"Gate {_id}", ">>> PUERTA ABIERTA <<<");
-
-        _ = Task.Delay(GATE_AUTO_CLOSE_MS).ContinueWith(_ => SafeClose());
+        ScheduleAutoClose();
     }
 
     public void Close()
     {
+        CancelPendingAutoClose();
         _angle = MIN_ANGLE;
         DispatchAngle();
         _logger.Info($"Gate {_id}", "<<< PUERTA CERRADA >>>");
@@ -55,11 +56,34 @@ public class Gate : Actuator, IGate
         _logger.Debug($"Gate {_id}", $"-> {_actuatorId} ANGLE:{_angle} (PIN {_pin})");
     }
 
-    private void SafeClose()
+    private void ScheduleAutoClose()
+    {
+        var newCts = new CancellationTokenSource();
+        var oldCts = Interlocked.Exchange(ref _autoCloseCts, newCts);
+        oldCts?.Cancel();
+        oldCts?.Dispose();
+
+        _ = AutoCloseAsync(newCts.Token);
+    }
+
+    private void CancelPendingAutoClose()
+    {
+        var pending = Interlocked.Exchange(ref _autoCloseCts, null);
+        pending?.Cancel();
+        pending?.Dispose();
+    }
+
+    private async Task AutoCloseAsync(CancellationToken ct)
     {
         try
         {
-            Close();
+            await Task.Delay(GATE_AUTO_CLOSE_MS, ct).ConfigureAwait(false);
+            _angle = MIN_ANGLE;
+            DispatchAngle();
+            _logger.Info($"Gate {_id}", "<<< PUERTA CERRADA >>>");
+        }
+        catch (TaskCanceledException)
+        {
         }
         catch (Exception ex)
         {
