@@ -14,6 +14,8 @@ public interface IParkingRepository
 
     Task<bool> UpdateSpotStatusAsync(string spotId, bool isOccupied, CancellationToken ct = default);
 
+    Task<bool> UpdateLotModeAsync(string lotId, ParkingMode mode, CancellationToken ct = default);
+
     Task EnsureSpotExistsAsync(string spotId, string lotId, string address, string type, string floor,
         CancellationToken ct = default);
 

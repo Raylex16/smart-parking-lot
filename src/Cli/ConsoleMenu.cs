@@ -1,6 +1,7 @@
 using SmartParkingLot.Application;
 using SmartParkingLot.Application.Logging;
 using SmartParkingLot.Core;
+using SmartParkingLot.Core.Approvals;
 using SmartParkingLot.Core.Events;
 using SmartParkingLot.Core.Interfaces;
 using SmartParkingLot.Hardware;
@@ -12,39 +13,36 @@ public class ConsoleMenu
     private const int RECENT_LOG_LINES = 50;
 
     private readonly ParkingLot _lot;
-    private readonly GateController _gateController;
-    private readonly ICapacityService _capacityService;
     private readonly IParkingRepository _repository;
     private readonly IEventPublisher _bus;
     private readonly Dictionary<string, Sensor<SpotSensorReading>> _spotSensors;
     private readonly Sensor<GateSensorReading> _gateSensor;
     private readonly IArduinoReader _bridge;
-    private readonly SerialCommandDispatcher _dispatcher;
+    private readonly IParkingModeService _modeService;
+    private readonly IApprovalQueue _approvalQueue;
     private readonly ConsoleLogger _consoleLogger;
     private readonly FileLogger _fileLogger;
 
     public ConsoleMenu(
         ParkingLot lot,
-        GateController gateController,
-        ICapacityService capacityService,
         IParkingRepository repository,
         IEventPublisher bus,
         Dictionary<string, Sensor<SpotSensorReading>> spotSensors,
         Sensor<GateSensorReading> gateSensor,
         IArduinoReader bridge,
-        SerialCommandDispatcher dispatcher,
+        IParkingModeService modeService,
+        IApprovalQueue approvalQueue,
         ConsoleLogger consoleLogger,
         FileLogger fileLogger)
     {
         _lot = lot;
-        _gateController = gateController;
-        _capacityService = capacityService;
         _repository = repository;
         _bus = bus;
         _spotSensors = spotSensors;
         _gateSensor = gateSensor;
         _bridge = bridge;
-        _dispatcher = dispatcher;
+        _modeService = modeService;
+        _approvalQueue = approvalQueue;
         _consoleLogger = consoleLogger;
         _fileLogger = fileLogger;
     }
@@ -61,17 +59,19 @@ public class ConsoleMenu
             {
                 switch (choice)
                 {
-                    case "1": await HandleEntryAsync(); break;
-                    case "2": await HandleExitAsync(); break;
-                    case "3": await HandleManualSpotReadingAsync(); break;
-                    case "4": ShowParkingStatus(); break;
-                    case "5": await ShowVehicleHistoryAsync(); break;
-                    case "6": await ShowSensorReadingsAsync(); break;
-                    case "7": await ShowDeviceActionsAsync(); break;
-                    case "8": RunLiveMonitoring(); break;
-                    case "9": await ShowSpotsFromDbAsync(); break;
-                    case "10": ShowRecentLogs(); break;
-                    case "11": SimulateGateSensor(); break;
+                    case "1": SimulateGateSensor(); break;
+                    case "2": await HandleManualSpotReadingAsync(); break;
+                    case "3": await ShowParkingStatusAsync(); break;
+                    case "4": await ShowSensorReadingsAsync(); break;
+                    case "5": RunLiveMonitoring(); break;
+                    case "6": ShowRecentLogs(); break;
+                    case "7": await HandleChangeModeAsync(); break;
+                    case "8":
+                        if (_lot.Mode != ParkingMode.MANUAL)
+                            Console.WriteLine("La opción 8 sólo está disponible en modo MANUAL.");
+                        else
+                            HandlePendingApprovals();
+                        break;
                     case "0":
                         Console.WriteLine("Saliendo...");
                         return;
@@ -99,81 +99,110 @@ public class ConsoleMenu
         Console.WriteLine($"  Parqueadero : {_lot.Name} ({_lot.Id})");
         Console.WriteLine($"  Modo        : {_lot.Mode}");
         Console.WriteLine($"  Espacios    : {_lot.TotalSpots} totales | {_lot.AvailableSpots} disponibles");
-        Console.WriteLine("  # -> No implementado en esta demo");
-        Console.WriteLine("  1. # Solicitar entrada de vehículo");
-        Console.WriteLine("  2. # Solicitar salida de vehículo");
-        Console.WriteLine("  3. # Actualizar estado de un espacio (sensor manual)");
-        Console.WriteLine("  4. Ver estado del parqueadero");
-        Console.WriteLine("  5. # Ver historial de un vehículo");
-        Console.WriteLine("  6. Ver lecturas de un sensor");
-        Console.WriteLine("  7. # Ver acciones de un dispositivo");
-        Console.WriteLine("  8. Monitoreo en tiempo real (Arduino)");
-        Console.WriteLine("  9. Ver estado de espacios");
-        Console.WriteLine("  10. Ver logs recientes");
-        Console.WriteLine("  11. Simular sensor de puerta (IR)");
+        Console.WriteLine();
+        Console.WriteLine("  1. Simular sensor de puerta (IR)");
+        Console.WriteLine("  2. Actualizar estado de un espacio (sensor manual)");
+        Console.WriteLine("  3. Ver estado del parqueadero");
+        Console.WriteLine("  4. Ver lecturas de un sensor");
+        Console.WriteLine("  5. Monitoreo en tiempo real (Arduino)");
+        Console.WriteLine("  6. Ver logs recientes");
+        Console.WriteLine("  7. Cambiar modo del parqueadero (AUTOMATIC ↔ MANUAL)");
+        if (_lot.Mode == ParkingMode.MANUAL)
+            Console.WriteLine("  8. Aprobaciones pendientes");
         Console.WriteLine("  0. Salir");
     }
 
-    private async Task HandleEntryAsync()
+    private void HandlePendingApprovals()
     {
-        Console.Write("Placa del vehículo: ");
-        var plate = Console.ReadLine()?.Trim();
-        if (string.IsNullOrWhiteSpace(plate))
+        var pending = _approvalQueue.GetPending();
+
+        if (pending.Count == 0)
         {
-            Console.WriteLine("Placa vacía.");
+            Console.WriteLine("\nNo hay aprobaciones pendientes.");
             return;
         }
 
-        var occupiedBefore = _lot.GetSpots()
-            .Where(s => s.IsOccupied)
-            .Select(s => s.Id)
-            .ToHashSet();
+        Console.WriteLine($"\nAprobaciones pendientes ({pending.Count}):");
+        Console.WriteLine($"  {"#",-3} {"ID",-13} {"Placa",-16} {"Puerta",-8} Restante");
+        Console.WriteLine($"  {new string('─', 55)}");
 
-        var gateReading = new GateSensorReading(plate, ENTRY_GATE_ID);
-        _gateSensor.CaptureReading(gateReading);
-        await _repository.LogSensorReadingAsync(_gateSensor.Id, $"plate:{plate}", DateTime.Now);
-
-        var request = new EntryRequest(plate) { GateId = ENTRY_GATE_ID };
-        await _gateController.HandleRequestAsync(request);
-
-        var requestId = $"REQ-{Guid.NewGuid().ToString("N")[..8]}";
-        await _repository.LogRequestAsync(requestId, plate, "ENTRY", _lot.Id, request.Timestamp, request.Approved);
-
-        if (request.Approved)
+        var now = DateTime.Now;
+        for (var i = 0; i < pending.Count; i++)
         {
-            var newlyOccupied = _lot.GetSpots()
-                .FirstOrDefault(s => s.IsOccupied && !occupiedBefore.Contains(s.Id));
-
-            if (newlyOccupied is not null)
-            {
-                await _repository.UpdateSpotStatusAsync(newlyOccupied.Id, true);
-            }
-
-            await _repository.LogDeviceActionAsync($"GATE-{ENTRY_GATE_ID}", "OPEN", DateTime.Now);
+            var a = pending[i];
+            var remaining = (a.ExpiresAt - now).TotalSeconds;
+            var remainingText = remaining > 0 ? $"{remaining:0.0}s" : "EXPIRADA";
+            Console.WriteLine($"  {i + 1,-3} {a.Id,-13} {a.VehiclePlate,-16} {a.GateId,-8} {remainingText}");
         }
 
-        Console.WriteLine($"\n[Resultado] {(request.Approved ? "CONCEDIDO ✓" : "DENEGADO ✗")} | Disponibles: {_lot.AvailableSpots}");
+        Console.Write("\n# a procesar (ENTER cancela): ");
+        var input = Console.ReadLine()?.Trim();
+        if (string.IsNullOrEmpty(input))
+        {
+            Console.WriteLine("Cancelado.");
+            return;
+        }
+
+        if (!int.TryParse(input, out var index) || index < 1 || index > pending.Count)
+        {
+            Console.WriteLine($"# inválido. Use un valor entre 1 y {pending.Count}.");
+            return;
+        }
+
+        var approval = pending[index - 1];
+        if (approval.IsResolved)
+        {
+            Console.WriteLine($"Aprobación '{approval.Id}' ya fue resuelta.");
+            return;
+        }
+
+        Console.Write("A = aprobar, D = denegar: ");
+        var decision = Console.ReadLine()?.Trim().ToUpperInvariant();
+        switch (decision)
+        {
+            case "A":
+                approval.Approve();
+                Console.WriteLine($"{approval.Id} → APROBADA.");
+                break;
+            case "D":
+                approval.Deny();
+                Console.WriteLine($"{approval.Id} → DENEGADA.");
+                break;
+            default:
+                Console.WriteLine($"Opción '{decision}' no reconocida. Aprobación intacta.");
+                break;
+        }
     }
 
-    private async Task HandleExitAsync()
+    private async Task HandleChangeModeAsync()
     {
-        Console.Write("Placa del vehículo: ");
-        var plate = Console.ReadLine()?.Trim();
-        if (string.IsNullOrWhiteSpace(plate))
+        Console.WriteLine($"\nModo actual: {_modeService.Current}");
+        Console.WriteLine("  A. AUTOMATIC");
+        Console.WriteLine("  M. MANUAL");
+        Console.Write("\nNuevo modo (A/M, ENTER cancela): ");
+
+        var input = Console.ReadLine()?.Trim().ToUpperInvariant();
+        if (string.IsNullOrEmpty(input))
         {
-            Console.WriteLine("Placa vacía.");
+            Console.WriteLine("Cancelado.");
             return;
         }
 
-        var request = new ExitRequest(plate) { GateId = EXIT_GATE_ID };
-        await _gateController.HandleRequestAsync(request);
+        var target = input switch
+        {
+            "A" => ParkingMode.AUTOMATIC,
+            "M" => ParkingMode.MANUAL,
+            _   => (ParkingMode?)null
+        };
 
-        var requestId = $"REQ-{Guid.NewGuid().ToString("N")[..8]}";
-        await _repository.LogRequestAsync(requestId, plate, "EXIT", _lot.Id, request.Timestamp, approved: true);
-        await _repository.LogDeviceActionAsync($"GATE-{EXIT_GATE_ID}", "OPEN", DateTime.Now);
+        if (target is null)
+        {
+            Console.WriteLine($"Opción '{input}' no reconocida.");
+            return;
+        }
 
-        Console.WriteLine($"\n[Resultado] Puerta de salida abierta para '{plate}'.");
-        Console.WriteLine("[Nota] La liberación del spot la detecta el sensor (use opción 3).");
+        await _modeService.SwitchToAsync(target.Value);
+        Console.WriteLine($"\nModo actualizado a {_modeService.Current}.");
     }
 
     private async Task HandleManualSpotReadingAsync()
@@ -215,39 +244,27 @@ public class ConsoleMenu
         Console.WriteLine($"\n[Resultado] Evento publicado — Espacio '{spotId}' → {(isOccupied ? "OCUPADO" : "LIBRE")}.");
     }
 
-    private void ShowParkingStatus()
+    private async Task ShowParkingStatusAsync()
     {
+        var spots = (await _repository.GetSpotsByLotIdAsync(_lot.Id)).ToList();
+
         Console.WriteLine($"\nEstado de '{_lot.Name}' ({_lot.Id})");
-        Console.WriteLine($"  Disponibles: {_lot.AvailableSpots} / {_lot.TotalSpots}\n");
-        foreach (var spot in _lot.GetSpots())
-            Console.WriteLine($"  {spot}");
-    }
+        Console.WriteLine($"  Disponibles (memoria) : {_lot.AvailableSpots} / {_lot.TotalSpots}\n");
 
-    private async Task ShowVehicleHistoryAsync()
-    {
-        Console.Write("Placa del vehículo: ");
-        var plate = Console.ReadLine()?.Trim();
-        if (string.IsNullOrWhiteSpace(plate))
+        if (spots.Count == 0)
         {
-            Console.WriteLine("Placa vacía.");
+            Console.WriteLine("No hay espacios registrados en la BD.");
             return;
         }
 
-        var history = await _repository.GetRequestHistoryAsync(plate);
-        var list = history.ToList();
+        Console.WriteLine($"  {"ID",-8} {"Dirección",-28} Estado");
+        Console.WriteLine($"  {new string('─', 50)}");
 
-        if (list.Count == 0)
-        {
-            Console.WriteLine($"No hay historial para '{plate}'.");
-            return;
-        }
+        foreach (var s in spots)
+            Console.WriteLine($"  {s.Id,-8} {s.Address,-28} {(s.IsOccupied ? "OCUPADO" : "LIBRE")}");
 
-        Console.WriteLine($"\nHistorial de '{plate}' ({list.Count} registro(s)):");
-        foreach (var r in list)
-        {
-            var approved = r.Approved ? "✓ APROBADO" : "✗ DENEGADO";
-            Console.WriteLine($"  [{r.Timestamp:yyyy-MM-dd HH:mm:ss}] {r.RequestType,-5} {approved}  ({r.RequestId})");
-        }
+        var occupied = spots.Count(s => s.IsOccupied);
+        Console.WriteLine($"\n  Total: {spots.Count} | Ocupados: {occupied} | Libres: {spots.Count - occupied}");
     }
 
     private async Task ShowSensorReadingsAsync()
@@ -276,54 +293,6 @@ public class ConsoleMenu
         Console.WriteLine($"\nLecturas de '{sensorId}' ({readings.Count} registro(s)):");
         foreach (var r in readings)
             Console.WriteLine($"  [{r.Timestamp:yyyy-MM-dd HH:mm:ss}] Valor: {r.Value}  ({r.Id})");
-    }
-
-    private async Task ShowDeviceActionsAsync()
-    {
-        Console.WriteLine("Dispositivos conocidos:");
-        Console.WriteLine($"  GATE-{ENTRY_GATE_ID}");
-        Console.WriteLine($"  GATE-{EXIT_GATE_ID}");
-
-        Console.Write("\nID del dispositivo: ");
-        var deviceId = Console.ReadLine()?.Trim();
-        if (string.IsNullOrWhiteSpace(deviceId))
-        {
-            Console.WriteLine("ID vacío.");
-            return;
-        }
-
-        var actions = (await _repository.GetDeviceActionsAsync(deviceId)).ToList();
-
-        if (actions.Count == 0)
-        {
-            Console.WriteLine($"No hay acciones para '{deviceId}'.");
-            return;
-        }
-
-        Console.WriteLine($"\nAcciones de '{deviceId}' ({actions.Count} registro(s)):");
-        foreach (var a in actions)
-            Console.WriteLine($"  [{a.Timestamp:yyyy-MM-dd HH:mm:ss}] {a.Action}  ({a.Id})");
-    }
-
-    private async Task ShowSpotsFromDbAsync()
-    {
-        var spots = (await _repository.GetSpotsByLotIdAsync(_lot.Id)).ToList();
-
-        if (spots.Count == 0)
-        {
-            Console.WriteLine("No hay espacios registrados en la BD.");
-            return;
-        }
-
-        Console.WriteLine($"\nEspacios de '{_lot.Name}' en BD ({spots.Count} espacio(s)):");
-        Console.WriteLine($"  {"ID",-8} {"Dirección",-28} Estado");
-        Console.WriteLine($"  {new string('─', 50)}");
-
-        foreach (var s in spots)
-            Console.WriteLine($"  {s.Id,-8} {s.Address,-28} {(s.IsOccupied ? "OCUPADO" : "LIBRE")}");
-
-        var occupied = spots.Count(s => s.IsOccupied);
-        Console.WriteLine($"\n  Total: {spots.Count} | Ocupados: {occupied} | Libres: {spots.Count - occupied}");
     }
 
     private void RunLiveMonitoring()

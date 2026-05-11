@@ -1,6 +1,7 @@
 {
   "port": "COM5",
   "baudRate": 9600,
+  "manualApprovalTimeoutSeconds": 15,
   "sensors": [
     {
       "sensorId": "IR1",

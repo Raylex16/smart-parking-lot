@@ -23,7 +23,8 @@ public sealed record HardwareConfig(
     [property: JsonPropertyName("port")]     string Port,
     [property: JsonPropertyName("baudRate")] int BaudRate,
     [property: JsonPropertyName("sensors")]  IReadOnlyList<SensorMapping> Sensors,
-    [property: JsonPropertyName("gates")]    IReadOnlyList<GateMapping> Gates)
+    [property: JsonPropertyName("gates")]    IReadOnlyList<GateMapping> Gates,
+    [property: JsonPropertyName("manualApprovalTimeoutSeconds")] int ManualApprovalTimeoutSeconds = 15)
 {
     public static HardwareConfig Load(string path)
     {

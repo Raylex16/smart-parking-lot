@@ -1,10 +1,13 @@
 using SmartParkingLot.Application;
+using SmartParkingLot.Application.Approvals;
 using SmartParkingLot.Application.Display;
 using SmartParkingLot.Application.Handlers;
 using SmartParkingLot.Application.Infrastructure;
 using SmartParkingLot.Application.Logging;
+using SmartParkingLot.Application.Notifications;
 using SmartParkingLot.Application.Policies;
 using SmartParkingLot.Application.Recognition;
+using SmartParkingLot.Application.Services;
 using SmartParkingLot.Application.UseCases;
 using SmartParkingLot.Core;
 using SmartParkingLot.Core.Events;
@@ -89,8 +92,24 @@ public sealed class ParkingLotApp
 
         ICapacityService capacityService = new CapacityService(lot, logger);
         IAlertService alertService = new AlertService(logger, repository);
-        IAccessPolicy accessPolicy = new AlwaysAllowPolicy();
-        var gateController = new GateController(capacityService, alertService, accessPolicy, logger);
+
+        IApprovalQueue approvalQueue = new InMemoryApprovalQueue();
+        IApprovalNotifier approvalNotifier = new BeepApprovalNotifier();
+        approvalQueue.Enqueued += approvalNotifier.Notify;
+
+        var manualTimeout = TimeSpan.FromSeconds(hwConfig.ManualApprovalTimeoutSeconds);
+
+        Func<ParkingMode, IAccessPolicy> policyFactory = mode => mode switch
+        {
+            ParkingMode.MANUAL    => new ManualAccessPolicy(approvalQueue, logger, manualTimeout),
+            ParkingMode.AUTOMATIC => new AlwaysAllowPolicy(),
+            _                     => new AlwaysAllowPolicy()
+        };
+
+        var switchablePolicy = new SwitchableAccessPolicy(policyFactory(lot.Mode));
+        IParkingModeService modeService = new ParkingModeService(lot, switchablePolicy, repository, logger, policyFactory);
+
+        var gateController = new GateController(capacityService, alertService, switchablePolicy, logger);
 
         gateController.RegisterGate(ENTRY_GATE_ID, new Gate(ENTRY_GATE_ID, GateType.ENTRY, ENTRY_GATE_PIN, ENTRY_GATE_ACTUATOR_ID, dispatcher, logger));
         gateController.RegisterGate(EXIT_GATE_ID, new Gate(EXIT_GATE_ID, GateType.EXIT, EXIT_GATE_PIN, EXIT_GATE_ACTUATOR_ID, dispatcher, logger));
@@ -107,7 +126,7 @@ public sealed class ParkingLotApp
         bridge.StartListening();
         display.ShowCapacity(lot.AvailableSpots, lot.TotalSpots);
 
-        var menu = new ConsoleMenu(lot, gateController, capacityService, repository, bus, spotSensors, gateSensor, bridge, dispatcher, consoleLogger, fileLogger);
+        var menu = new ConsoleMenu(lot, repository, bus, spotSensors, gateSensor, bridge, modeService, approvalQueue, consoleLogger, fileLogger);
         await menu.RunAsync();
     }
 }
