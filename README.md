@@ -4,7 +4,7 @@ A smart parking lot entry simulator built with **C# 14 / .NET 10**. This project
 
 ## Deliverables
 
-- [x] **Updated UML class diagram showing the patterns** — see [Third Preview](#third-preview)
+- [x] **Updated UML class diagram showing the patterns** — see [Third Preview (current)](#third-preview)
 - [x] **Public Git repository with meaningful commits** — [github.com/Raylex16/smart-parking-lot](https://github.com/Raylex16/smart-parking-lot)
 - [x] **Short design note** — see ![Design Note](docs/patrones/Patterns_Smart_Parking_Lot.pdf)
 - [x] **Execution evidence**
