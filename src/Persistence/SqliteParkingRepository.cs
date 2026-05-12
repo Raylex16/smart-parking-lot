@@ -138,6 +138,26 @@ public class SqliteParkingRepository : IParkingRepository
         return result > 0;
     }
 
+    public async Task<bool> UpdateLotModeAsync(string lotId, ParkingMode mode, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(lotId);
+
+        using var connection = GetConnection();
+        await connection.OpenAsync(ct);
+
+        var sql = """
+            UPDATE ParkingLots
+            SET Mode = @Mode
+            WHERE Id = @LotId;
+        """;
+        var result = await connection.ExecuteAsync(
+            new CommandDefinition(sql,
+                new { LotId = lotId, Mode = mode.ToString() },
+                cancellationToken: ct));
+
+        return result > 0;
+    }
+
     public async Task<bool> DeleteParkingSpotAsync(string spotId, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(spotId);

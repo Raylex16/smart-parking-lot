@@ -1,6 +1,8 @@
 {
   "port": "COM5",
   "baudRate": 9600,
+  "manualApprovalTimeoutSeconds": 15,
+  "allowedPlates": ["ABC-123", "XYZ-789"],
   "sensors": [
     {
       "sensorId": "IR1",
