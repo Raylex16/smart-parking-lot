@@ -13,18 +13,15 @@ public class ConsoleMenu
 {
     private const int RECENT_LOG_LINES = 50;
 
-    private const string OPT_ENTRY    = "Solicitar entrada de vehículo";
-    private const string OPT_EXIT_VEH = "Solicitar salida de vehículo";
-    private const string OPT_SPOT     = "Actualizar estado de un espacio (sensor manual)";
-    private const string OPT_STATUS   = "Ver estado del parqueadero";
-    private const string OPT_HISTORY  = "Ver historial de un vehículo";
-    private const string OPT_SENSOR   = "Ver lecturas de un sensor";
-    private const string OPT_DEVICE   = "Ver acciones de un dispositivo";
-    private const string OPT_MONITOR  = "Monitoreo en tiempo real (Arduino)";
-    private const string OPT_SPOTS_DB = "Ver estado de espacios (BD)";
-    private const string OPT_LOGS     = "Ver logs recientes";
-    private const string OPT_SIMULATE = "Simular sensor de puerta (IR)";
-    private const string OPT_QUIT     = "Salir";
+    private const string OPT_SIMULATE  = "Simular sensor de puerta (IR)";
+    private const string OPT_SPOT      = "Actualizar estado de un espacio (sensor manual)";
+    private const string OPT_STATUS    = "Ver estado del parqueadero";
+    private const string OPT_SENSOR    = "Ver lecturas de un sensor";
+    private const string OPT_MONITOR   = "Monitoreo en tiempo real (Arduino)";
+    private const string OPT_LOGS      = "Ver logs recientes";
+    private const string OPT_MODE      = "Cambiar modo del parqueadero (AUTOMATIC ↔ MANUAL)";
+    private const string OPT_APPROVALS = "Aprobaciones pendientes";
+    private const string OPT_QUIT      = "Salir";
 
     private readonly ParkingLot _lot;
     private readonly IParkingRepository _repository;
@@ -67,15 +64,21 @@ public class ConsoleMenu
         {
             RenderHeader();
 
+            var choices = new List<string>
+            {
+                OPT_SIMULATE, OPT_SPOT, OPT_STATUS, OPT_SENSOR,
+                OPT_MONITOR, OPT_LOGS, OPT_MODE
+            };
+            if (_lot.Mode == ParkingMode.MANUAL)
+                choices.Add(OPT_APPROVALS);
+            choices.Add(OPT_QUIT);
+
             var choice = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title("[bold yellow]¿Qué desea hacer?[/]")
                     .PageSize(14)
                     .HighlightStyle(new Style(Color.Green, decoration: Decoration.Bold))
-                    .AddChoices(
-                        OPT_ENTRY, OPT_EXIT_VEH, OPT_SPOT, OPT_STATUS,
-                        OPT_HISTORY, OPT_SENSOR, OPT_DEVICE, OPT_MONITOR,
-                        OPT_SPOTS_DB, OPT_LOGS, OPT_SIMULATE, OPT_QUIT));
+                    .AddChoices(choices));
 
             if (choice == OPT_QUIT)
             {
@@ -89,17 +92,14 @@ public class ConsoleMenu
             {
                 switch (choice)
                 {
-                    case OPT_ENTRY:    await HandleEntryAsync();             break;
-                    case OPT_EXIT_VEH: await HandleExitAsync();              break;
-                    case OPT_SPOT:     await HandleManualSpotReadingAsync(); break;
-                    case OPT_STATUS:   ShowParkingStatus();                  break;
-                    case OPT_HISTORY:  await ShowVehicleHistoryAsync();      break;
-                    case OPT_SENSOR:   await ShowSensorReadingsAsync();      break;
-                    case OPT_DEVICE:   await ShowDeviceActionsAsync();       break;
-                    case OPT_MONITOR:  RunLiveMonitoring();                  break;
-                    case OPT_SPOTS_DB: await ShowSpotsFromDbAsync();         break;
-                    case OPT_LOGS:     ShowRecentLogs();                     break;
-                    case OPT_SIMULATE: SimulateGateSensor();                 break;
+                    case OPT_SIMULATE:  SimulateGateSensor();                 break;
+                    case OPT_SPOT:      await HandleManualSpotReadingAsync(); break;
+                    case OPT_STATUS:    await ShowParkingStatusAsync();       break;
+                    case OPT_SENSOR:    await ShowSensorReadingsAsync();      break;
+                    case OPT_MONITOR:   RunLiveMonitoring();                  break;
+                    case OPT_LOGS:      ShowRecentLogs();                     break;
+                    case OPT_MODE:      await HandleChangeModeAsync();        break;
+                    case OPT_APPROVALS: HandlePendingApprovals();             break;
                 }
             }
             catch (Exception ex)
@@ -127,61 +127,100 @@ public class ConsoleMenu
         AnsiConsole.WriteLine();
     }
 
-    private void HandlePendingApprovals()
-    {
-        AnsiConsole.Write(new Rule("[bold]Entrada de vehículo[/]").LeftJustified());
-
-        var plate = AnsiConsole.Prompt(
-            new TextPrompt<string>("[green]?[/] Placa del vehículo:")
-                .Validate(p => !string.IsNullOrWhiteSpace(p)
-                    ? ValidationResult.Success()
-                    : ValidationResult.Error("[red]La placa no puede estar vacía.[/]")));
-
-        var occupiedBefore = _lot.GetSpots()
-            .Where(s => s.IsOccupied).Select(s => s.Id).ToHashSet();
-
-        var gateReading = new GateSensorReading(plate, ENTRY_GATE_ID);
-        _gateSensor.CaptureReading(gateReading);
-        await _repository.LogSensorReadingAsync(_gateSensor.Id, $"plate:{plate}", DateTime.Now);
-
-        var request = new EntryRequest(plate) { GateId = ENTRY_GATE_ID };
-        await _gateController.HandleRequestAsync(request);
-
-        var requestId = $"REQ-{Guid.NewGuid().ToString("N")[..8]}";
-        await _repository.LogRequestAsync(requestId, plate, "ENTRY", _lot.Id, request.Timestamp, request.Approved);
-
-        if (request.Approved)
-        {
-            var newlyOccupied = _lot.GetSpots()
-                .FirstOrDefault(s => s.IsOccupied && !occupiedBefore.Contains(s.Id));
-            if (newlyOccupied is not null)
-                await _repository.UpdateSpotStatusAsync(newlyOccupied.Id, true);
-            await _repository.LogDeviceActionAsync($"GATE-{ENTRY_GATE_ID}", "OPEN", DateTime.Now);
-        }
-
-        var result = request.Approved ? "[bold green]✓ CONCEDIDO[/]" : "[bold red]✗ DENEGADO[/]";
-        AnsiConsole.MarkupLine($"\nResultado: {result} | Disponibles: [yellow]{_lot.AvailableSpots}[/]");
-    }
-
     private async Task HandleChangeModeAsync()
     {
-        AnsiConsole.Write(new Rule("[bold]Salida de vehículo[/]").LeftJustified());
+        AnsiConsole.Write(new Rule("[bold]Cambiar modo del parqueadero[/]").LeftJustified());
+        AnsiConsole.MarkupLine($"\nModo actual: [yellow]{_modeService.Current}[/]\n");
 
-        var plate = AnsiConsole.Prompt(
-            new TextPrompt<string>("[green]?[/] Placa del vehículo:")
-                .Validate(p => !string.IsNullOrWhiteSpace(p)
+        var target = AnsiConsole.Prompt(
+            new SelectionPrompt<ParkingMode>()
+                .Title("Nuevo modo:")
+                .AddChoices(ParkingMode.AUTOMATIC, ParkingMode.MANUAL)
+                .UseConverter(m => m.ToString()));
+
+        if (target == _modeService.Current)
+        {
+            AnsiConsole.MarkupLine($"[grey]El modo ya es {target}. Sin cambios.[/]");
+            return;
+        }
+
+        await _modeService.SwitchToAsync(target);
+        AnsiConsole.MarkupLine($"\n[bold green]✓[/] Modo actualizado a [yellow]{_modeService.Current}[/].");
+    }
+
+    private void HandlePendingApprovals()
+    {
+        AnsiConsole.Write(new Rule("[bold]Aprobaciones pendientes[/]").LeftJustified());
+
+        var pending = _approvalQueue.GetPending();
+
+        if (pending.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[grey]No hay aprobaciones pendientes.[/]");
+            return;
+        }
+
+        var table = new Table().Border(TableBorder.Rounded);
+        table.AddColumn(new TableColumn("#").Centered());
+        table.AddColumn("ID");
+        table.AddColumn("Placa");
+        table.AddColumn(new TableColumn("Puerta").Centered());
+        table.AddColumn(new TableColumn("Restante").Centered());
+
+        var now = DateTime.Now;
+        for (var i = 0; i < pending.Count; i++)
+        {
+            var a = pending[i];
+            var remaining = (a.ExpiresAt - now).TotalSeconds;
+            var remainingText = remaining > 0
+                ? $"[green]{remaining:0.0}s[/]"
+                : "[red]EXPIRADA[/]";
+
+            table.AddRow(
+                (i + 1).ToString(),
+                a.Id.EscapeMarkup(),
+                a.VehiclePlate.EscapeMarkup(),
+                a.GateId.EscapeMarkup(),
+                remainingText);
+        }
+
+        AnsiConsole.Write(table);
+
+        var index = AnsiConsole.Prompt(
+            new TextPrompt<int>($"[green]?[/] # a procesar (0 para cancelar):")
+                .DefaultValue(0)
+                .Validate(i => i >= 0 && i <= pending.Count
                     ? ValidationResult.Success()
-                    : ValidationResult.Error("[red]La placa no puede estar vacía.[/]")));
+                    : ValidationResult.Error($"[red]Use un valor entre 0 y {pending.Count}.[/]")));
 
-        var request = new ExitRequest(plate) { GateId = EXIT_GATE_ID };
-        await _gateController.HandleRequestAsync(request);
+        if (index == 0)
+        {
+            AnsiConsole.MarkupLine("[grey]Cancelado.[/]");
+            return;
+        }
 
-        var requestId = $"REQ-{Guid.NewGuid().ToString("N")[..8]}";
-        await _repository.LogRequestAsync(requestId, plate, "EXIT", _lot.Id, request.Timestamp, approved: true);
-        await _repository.LogDeviceActionAsync($"GATE-{EXIT_GATE_ID}", "OPEN", DateTime.Now);
+        var approval = pending[index - 1];
+        if (approval.IsResolved)
+        {
+            AnsiConsole.MarkupLine($"[yellow]Aprobación '{approval.Id.EscapeMarkup()}' ya fue resuelta.[/]");
+            return;
+        }
 
-        AnsiConsole.MarkupLine($"\n[bold green]✓[/] Puerta de salida abierta para '[yellow]{plate.EscapeMarkup()}[/]'.");
-        AnsiConsole.MarkupLine("[grey]La liberación del spot la detecta el sensor.[/]");
+        var decision = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title($"Decisión para [yellow]{approval.Id.EscapeMarkup()}[/]:")
+                .AddChoices("Aprobar", "Denegar"));
+
+        if (decision == "Aprobar")
+        {
+            approval.Approve();
+            AnsiConsole.MarkupLine($"\n[bold green]✓[/] {approval.Id.EscapeMarkup()} → [green]APROBADA[/].");
+        }
+        else
+        {
+            approval.Deny();
+            AnsiConsole.MarkupLine($"\n[bold red]✗[/] {approval.Id.EscapeMarkup()} → [red]DENEGADA[/].");
+        }
     }
 
     private async Task HandleManualSpotReadingAsync()
@@ -229,58 +268,31 @@ public class ConsoleMenu
     {
         AnsiConsole.Write(new Rule("[bold]Estado del parqueadero[/]").LeftJustified());
 
-        var table = new Table()
-            .Border(TableBorder.Rounded)
-            .Title($"[bold]{_lot.Name.EscapeMarkup()}[/] [grey]({_lot.Id.EscapeMarkup()})[/]");
+        var spots = (await _repository.GetSpotsByLotIdAsync(_lot.Id)).ToList();
 
-        table.AddColumn(new TableColumn("ID").Centered());
-        table.AddColumn(new TableColumn("Estado").Centered());
-
-        foreach (var spot in _lot.GetSpots())
-            table.AddRow(spot.Id.EscapeMarkup(), spot.IsOccupied ? "[red]● OCUPADO[/]" : "[green]○ LIBRE[/]");
-
-        AnsiConsole.Write(table);
-        AnsiConsole.MarkupLine($"\n[grey]Disponibles:[/] [green]{_lot.AvailableSpots}[/] [grey]/[/] [white]{_lot.TotalSpots}[/]");
-    }
-
-    private async Task ShowVehicleHistoryAsync()
-    {
-        AnsiConsole.Write(new Rule("[bold]Historial de vehículo[/]").LeftJustified());
-
-        var plate = AnsiConsole.Prompt(
-            new TextPrompt<string>("[green]?[/] Placa del vehículo:")
-                .Validate(p => !string.IsNullOrWhiteSpace(p)
-                    ? ValidationResult.Success()
-                    : ValidationResult.Error("[red]La placa no puede estar vacía.[/]")));
-
-        var history = (await _repository.GetRequestHistoryAsync(plate)).ToList();
-
-        if (history.Count == 0)
+        if (spots.Count == 0)
         {
-            AnsiConsole.MarkupLine($"[yellow]No hay historial para '{plate.EscapeMarkup()}'.[/]");
+            AnsiConsole.MarkupLine("[yellow]No hay espacios registrados en la BD.[/]");
             return;
         }
 
         var table = new Table()
             .Border(TableBorder.Rounded)
-            .Title($"Historial de [bold yellow]{plate.EscapeMarkup()}[/] ({history.Count} registro(s))");
+            .Title($"[bold]{_lot.Name.EscapeMarkup()}[/] [grey]({_lot.Id.EscapeMarkup()})[/]");
 
-        table.AddColumn("Fecha / Hora");
-        table.AddColumn(new TableColumn("Tipo").Centered());
+        table.AddColumn(new TableColumn("ID").Centered());
+        table.AddColumn("Dirección");
         table.AddColumn(new TableColumn("Estado").Centered());
-        table.AddColumn("ID Solicitud");
 
-        foreach (var r in history)
-        {
-            var approved = r.Approved ? "[bold green]✓ APROBADO[/]" : "[bold red]✗ DENEGADO[/]";
-            table.AddRow(
-                r.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"),
-                r.RequestType,
-                approved,
-                r.RequestId.EscapeMarkup());
-        }
+        foreach (var s in spots)
+            table.AddRow(s.Id.EscapeMarkup(), s.Address.EscapeMarkup(),
+                s.IsOccupied ? "[red]● OCUPADO[/]" : "[green]○ LIBRE[/]");
 
         AnsiConsole.Write(table);
+
+        var occupied = spots.Count(s => s.IsOccupied);
+        AnsiConsole.MarkupLine($"\n[grey]Total:[/] {spots.Count} | [red]Ocupados:[/] {occupied} | [green]Libres:[/] {spots.Count - occupied}");
+        AnsiConsole.MarkupLine($"[grey]Memoria:[/] [green]{_lot.AvailableSpots}[/] [grey]disponibles de[/] [white]{_lot.TotalSpots}[/]");
     }
 
     private async Task ShowSensorReadingsAsync()
@@ -315,66 +327,6 @@ public class ConsoleMenu
             table.AddRow(r.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"), r.Value.EscapeMarkup(), r.Id.EscapeMarkup());
 
         AnsiConsole.Write(table);
-    }
-
-    private async Task ShowDeviceActionsAsync()
-    {
-        AnsiConsole.Write(new Rule("[bold]Acciones de dispositivo[/]").LeftJustified());
-
-        var deviceId = AnsiConsole.Prompt(
-            new SelectionPrompt<string>()
-                .Title("[green]?[/] Seleccione un dispositivo:")
-                .AddChoices($"GATE-{ENTRY_GATE_ID}", $"GATE-{EXIT_GATE_ID}"));
-
-        var actions = (await _repository.GetDeviceActionsAsync(deviceId)).ToList();
-
-        if (actions.Count == 0)
-        {
-            AnsiConsole.MarkupLine($"[yellow]No hay acciones para '{deviceId.EscapeMarkup()}'.[/]");
-            return;
-        }
-
-        var table = new Table()
-            .Border(TableBorder.Rounded)
-            .Title($"Acciones de [bold]{deviceId.EscapeMarkup()}[/] ({actions.Count} registro(s))");
-
-        table.AddColumn("Fecha / Hora");
-        table.AddColumn(new TableColumn("Acción").Centered());
-        table.AddColumn("ID");
-
-        foreach (var a in actions)
-            table.AddRow(a.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"), a.Action.EscapeMarkup(), a.Id.EscapeMarkup());
-
-        AnsiConsole.Write(table);
-    }
-
-    private async Task ShowSpotsFromDbAsync()
-    {
-        AnsiConsole.Write(new Rule("[bold]Espacios en base de datos[/]").LeftJustified());
-
-        var spots = (await _repository.GetSpotsByLotIdAsync(_lot.Id)).ToList();
-
-        if (spots.Count == 0)
-        {
-            AnsiConsole.MarkupLine("[yellow]No hay espacios registrados en la BD.[/]");
-            return;
-        }
-
-        var table = new Table()
-            .Border(TableBorder.Rounded)
-            .Title($"[bold]{_lot.Name.EscapeMarkup()}[/] — {spots.Count} espacio(s)");
-
-        table.AddColumn(new TableColumn("ID").Centered());
-        table.AddColumn("Dirección");
-        table.AddColumn(new TableColumn("Estado").Centered());
-
-        foreach (var s in spots)
-            table.AddRow(s.Id.EscapeMarkup(), s.Address.EscapeMarkup(), s.IsOccupied ? "[red]● OCUPADO[/]" : "[green]○ LIBRE[/]");
-
-        AnsiConsole.Write(table);
-
-        var occupied = spots.Count(s => s.IsOccupied);
-        AnsiConsole.MarkupLine($"\n[grey]Total:[/] {spots.Count} | [red]Ocupados:[/] {occupied} | [green]Libres:[/] {spots.Count - occupied}");
     }
 
     private void RunLiveMonitoring()
