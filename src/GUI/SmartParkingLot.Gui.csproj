@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <RootNamespace>SmartParkingLot.Gui</RootNamespace>
+    <AssemblyName>SmartParkingLot.Gui</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platforms>x86;x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+    <PublishProfile>win-$(Platform).pubxml</PublishProfile>
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <EnableMsixTooling>false</EnableMsixTooling>
+    <!-- Bundle the WinAppSDK runtime so the .exe runs on any Win10/11 machine
+         without forcing the user to install the matching runtime version. -->
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <!-- dotnet build does not ship the Pri tasks. Borrow them from Visual Studio. -->
+  <PropertyGroup>
+    <AppxMSBuildToolsPath Condition="Exists('C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\AppxPackage\Microsoft.Build.Packaging.Pri.Tasks.dll')">C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\v18.0\AppxPackage\</AppxMSBuildToolsPath>
+    <AppxMSBuildToolsPath Condition="'$(AppxMSBuildToolsPath)' == '' AND Exists('C:\Program Files\Microsoft Visual Studio\18\Preview\MSBuild\Microsoft\VisualStudio\v18.0\AppxPackage\Microsoft.Build.Packaging.Pri.Tasks.dll')">C:\Program Files\Microsoft Visual Studio\18\Preview\MSBuild\Microsoft\VisualStudio\v18.0\AppxPackage\</AppxMSBuildToolsPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.241114003" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\SmartParkingLot.Core.csproj" />
+    <ProjectReference Include="..\Application\SmartParkingLot.Application.csproj" />
+    <ProjectReference Include="..\Hardware\SmartParkingLot.Hardware.csproj" />
+    <ProjectReference Include="..\Persistence\SmartParkingLot.Persistence.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="hardware.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="GUI\Smart Parking Hi-Fi.html" />
+    <None Remove="GUI\Smart Parking Wireframes.html" />
+  </ItemGroup>
+
+</Project>

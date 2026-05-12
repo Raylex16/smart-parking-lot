@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="SmartParkingLot.Gui.Pages.HardwarePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Height="56" Padding="20,0"
+              Background="{ThemeResource Layer1Brush}"
+              BorderBrush="{ThemeResource StrokeBrush}"
+              BorderThickness="0,0,0,1">
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="Hardware / Arduino"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           Foreground="{ThemeResource Tx1Brush}" />
+                <TextBlock Text="Estado del bridge serial y log en vivo"
+                           FontSize="11"
+                           Foreground="{ThemeResource Tx3Brush}" />
+            </StackPanel>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" Padding="16" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="12">
+                <!-- Top row: connection + log -->
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{StaticResource CardStyle}">
+                        <StackPanel Padding="16" Spacing="8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Conexión — IArduinoReader" Style="{StaticResource CardTitleTextStyle}" />
+                                <ContentPresenter x:Name="ConnBadgeHost" Grid.Column="1" />
+                            </Grid>
+
+                            <StackPanel Spacing="6" Margin="0,6,0,0">
+                                <TextBlock Text="PUERTO" Style="{StaticResource SectionHeaderTextStyle}" />
+                                <TextBox x:Name="PortBox" PlaceholderText="COM3" />
+                                <TextBlock Text="BAUD RATE" Style="{StaticResource SectionHeaderTextStyle}" />
+                                <TextBox x:Name="BaudBox" IsEnabled="False" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                                <Button x:Name="ConnectBtn"
+                                        Click="OnToggleConnectionClick"
+                                        Style="{StaticResource AccentButtonStyle}" />
+                                <Button x:Name="ScanBtn" Click="OnScanClick">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="" FontSize="12" />
+                                        <TextBlock Text="Escanear puertos" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                            <TextBlock x:Name="PortsList"
+                                       Text=""
+                                       FontFamily="Cascadia Code, Consolas, monospace"
+                                       FontSize="11"
+                                       Foreground="{ThemeResource Tx3Brush}"
+                                       Margin="0,4,0,0"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Style="{StaticResource CardStyle}">
+                        <StackPanel Padding="16" Spacing="6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Log en vivo" Style="{StaticResource CardTitleTextStyle}" />
+                                <StackPanel Orientation="Horizontal" Spacing="6" Grid.Column="1">
+                                    <ToggleSwitch x:Name="AutoScrollToggle"
+                                                  OffContent="Pausado"
+                                                  OnContent="Auto-scroll"
+                                                  IsOn="True" />
+                                    <Button x:Name="ClearLogBtn" Click="OnClearLogClick">
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="" FontSize="12" />
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+
+                            <Border Background="{ThemeResource Layer2Brush}"
+                                    BorderBrush="{ThemeResource StrokeBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="8"
+                                    Height="240">
+                                <ScrollViewer x:Name="LogScroll" VerticalScrollBarVisibility="Auto">
+                                    <StackPanel x:Name="LogPanel" />
+                                </ScrollViewer>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Bottom row: actions + recent log file -->
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{StaticResource CardStyle}">
+                        <StackPanel Padding="16" Spacing="6">
+                            <TextBlock Text="Sensor manual" Style="{StaticResource CardTitleTextStyle}" />
+                            <TextBlock Text="Publica un evento de SensorReadingReceived (simula lectura)"
+                                       FontSize="11"
+                                       Foreground="{ThemeResource Tx3Brush}" />
+                            <Grid ColumnSpacing="6" Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ComboBox x:Name="SensorCombo" PlaceholderText="Sensor" />
+                                <ComboBox Grid.Column="1" x:Name="StateCombo" SelectedIndex="0">
+                                    <ComboBoxItem Content="OCUPADO (1)" Tag="1" />
+                                    <ComboBoxItem Content="LIBRE (0)" Tag="0" />
+                                </ComboBox>
+                                <Button Grid.Column="2" x:Name="EmitBtn" Click="OnEmitClick"
+                                        Style="{StaticResource AccentButtonStyle}"
+                                        Content="Publicar" />
+                            </Grid>
+                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
+                                <Button Click="OnSimEntryIrClick">
+                                    <TextBlock Text="Simular IR entrada" />
+                                </Button>
+                                <Button Click="OnSimExitIrClick">
+                                    <TextBlock Text="Simular IR salida" />
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Style="{StaticResource CardStyle}">
+                        <StackPanel Padding="16" Spacing="6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Archivo de log de hoy" Style="{StaticResource CardTitleTextStyle}" />
+                                <Button Grid.Column="1" Click="OnLoadFileLogClick">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="" FontSize="12" />
+                                        <TextBlock Text="Cargar" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                            <TextBlock x:Name="LogFilePath"
+                                       FontFamily="Cascadia Code, Consolas, monospace"
+                                       FontSize="10"
+                                       Foreground="{ThemeResource Tx3Brush}"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <Border Background="{ThemeResource Layer2Brush}"
+                                    BorderBrush="{ThemeResource StrokeBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="8"
+                                    Height="180">
+                                <ScrollViewer>
+                                    <TextBlock x:Name="LogFileText"
+                                               FontFamily="Cascadia Code, Consolas, monospace"
+                                               FontSize="10"
+                                               Foreground="{ThemeResource Tx2Brush}" />
+                                </ScrollViewer>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

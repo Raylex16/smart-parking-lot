@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="SmartParkingLot.Gui.Pages.LogPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Height="56" Padding="20,0"
+              Background="{ThemeResource Layer1Brush}"
+              BorderBrush="{ThemeResource StrokeBrush}"
+              BorderThickness="0,0,0,1">
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="Historial"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           Foreground="{ThemeResource Tx1Brush}" />
+                <TextBlock x:Name="HeaderSubtitle"
+                           FontSize="11"
+                           Foreground="{ThemeResource Tx3Brush}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Filters -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Padding="16,8" Spacing="8"
+                    Background="{ThemeResource Layer1Brush}"
+                    BorderBrush="{ThemeResource Stroke2Brush}"
+                    BorderThickness="0,0,0,1">
+            <ComboBox x:Name="TypeCombo"
+                      Header="Tipo"
+                      SelectedIndex="0"
+                      MinWidth="160"
+                      SelectionChanged="OnFilterChanged">
+                <ComboBoxItem Content="Solicitudes (placa)" />
+                <ComboBoxItem Content="Lecturas de sensor" />
+                <ComboBoxItem Content="Acciones de dispositivo" />
+            </ComboBox>
+            <AutoSuggestBox x:Name="QueryBox"
+                            Header="Filtro / clave"
+                            PlaceholderText="placa, sensorId, GATE-G-01..."
+                            MinWidth="280"
+                            QuerySubmitted="OnQuerySubmitted" />
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom" Margin="0,0,0,2">
+                <Button x:Name="LoadBtn" Click="OnLoadClick" Style="{StaticResource AccentButtonStyle}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="" FontSize="12" />
+                        <TextBlock Text="Buscar" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="RefreshBtn" Click="OnLoadClick">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="" FontSize="12" />
+                        <TextBlock Text="Actualizar" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Data grid -->
+        <Border Grid.Row="2" Style="{StaticResource CardStyle}" Margin="16">
+            <ListView x:Name="ResultsList"
+                      SelectionMode="Single"
+                      ShowsScrollingPlaceholders="False"
+                      IsItemClickEnabled="False"
+                      Padding="0">
+                <ListView.HeaderTemplate>
+                    <DataTemplate>
+                        <Grid Padding="14,8" Background="{ThemeResource Layer1Brush}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150" />
+                                <ColumnDefinition Width="120" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="160" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="FECHA / HORA"
+                                       Grid.Column="0"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       CharacterSpacing="60"
+                                       Foreground="{ThemeResource Tx3Brush}" />
+                            <TextBlock Text="TIPO"
+                                       Grid.Column="1"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       CharacterSpacing="60"
+                                       Foreground="{ThemeResource Tx3Brush}" />
+                            <TextBlock Text="DETALLE"
+                                       Grid.Column="2"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       CharacterSpacing="60"
+                                       Foreground="{ThemeResource Tx3Brush}" />
+                            <TextBlock Text="REFERENCIA"
+                                       Grid.Column="3"
+                                       FontSize="10"
+                                       FontWeight="SemiBold"
+                                       CharacterSpacing="60"
+                                       Foreground="{ThemeResource Tx3Brush}" />
+                        </Grid>
+                    </DataTemplate>
+                </ListView.HeaderTemplate>
+            </ListView>
+        </Border>
+    </Grid>
+</Page>

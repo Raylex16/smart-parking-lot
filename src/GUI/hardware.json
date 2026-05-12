@@ -1,0 +1,94 @@
+{
+  "port": "COM5",
+  "baudRate": 9600,
+  "sensors": [
+    {
+      "sensorId": "IR1",
+      "spotId": "A-01",
+      "actuatorId": "LED1",
+      "address": "Zona A, P. 1",
+      "type": "Estándar",
+      "floor": "Planta 1"
+    },
+    {
+      "sensorId": "IR2",
+      "spotId": "A-02",
+      "actuatorId": "LED2",
+      "address": "Zona A, P. 2",
+      "type": "Estándar",
+      "floor": "Planta 1"
+    },
+    {
+      "sensorId": "IR3",
+      "spotId": "A-03",
+      "actuatorId": "LED3",
+      "address": "Zona A, P. 3",
+      "type": "Estándar",
+      "floor": "Planta 1"
+    },
+    {
+      "sensorId": "IR4",
+      "spotId": "A-04",
+      "actuatorId": "LED4",
+      "address": "Zona A, P. 4",
+      "type": "PMR",
+      "floor": "Planta 1"
+    },
+    {
+      "sensorId": "IR5",
+      "spotId": "B-01",
+      "actuatorId": "LED5",
+      "address": "Zona B, P. 1",
+      "type": "Estándar",
+      "floor": "Planta 1"
+    },
+    {
+      "sensorId": "IR6",
+      "spotId": "B-02",
+      "actuatorId": "LED6",
+      "address": "Zona B, P. 2",
+      "type": "Estándar",
+      "floor": "Planta 1"
+    },
+    {
+      "sensorId": "IR7",
+      "spotId": "B-03",
+      "actuatorId": "LED7",
+      "address": "Zona B, P. 3",
+      "type": "Moto",
+      "floor": "Planta 1"
+    },
+    {
+      "sensorId": "IR8",
+      "spotId": "C-01",
+      "actuatorId": "LED8",
+      "address": "Zona C, P. 1",
+      "type": "Estándar",
+      "floor": "Planta 1"
+    },
+    {
+      "sensorId": "IR9",
+      "spotId": "C-02",
+      "actuatorId": "LED9",
+      "address": "Zona C, P. 2",
+      "type": "Estándar",
+      "floor": "Planta 1"
+    }
+  ],
+  "gates": [
+    {
+      "gateId": "G-01",
+      "type": "ENTRY",
+      "irSensorId": "GATE-IR1",
+      "actuatorId": "GATE1",
+      "pin": 9
+    },
+    {
+      "gateId": "G-02",
+      "type": "EXIT",
+      "irSensorId": "GATE-IR2",
+      "actuatorId": "GATE2",
+      "pin": 10
+    }
+  ]
+}

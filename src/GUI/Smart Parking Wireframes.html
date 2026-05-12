@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Parking — Wireframes</title>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Patrick+Hand&family=Kalam:wght@400;700&family=Architects+Daughter&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  :root {
+    --bg:          #f0ece4;
+    --bg2:         #fafaf8;
+    --bg3:         #f5f2ec;
+    --bg4:         #e8e4dc;
+    --bg5:         #f0ece4;
+    --border:      #ccc;
+    --border2:     #ddd;
+    --text:        #1a1a1a;
+    --text2:       #444;
+    --text3:       #888;
+    --text4:       #555;
+    --panel-hd:    #f0ece4;
+    --stat-bg:     #fff;
+    --panel-bg:    #fff;
+    --input-bg:    #faf7f0;
+    --nav-hover:   #e2ddd5;
+    --nav-active:  #1a1a1a;
+    --nav-actxt:   #fff;
+    --rail-bg:     #e8e4dc;
+    --rail-hover:  #ddd8d0;
+    --titlebar:    #e8e4dc;
+    --topbar:      #f5f2ec;
+    --statusbar:   #e8e4dc;
+    --spot-bg:     #fff;
+    --note-bg:     #fffdf5;
+    --annot-border:#ccc;
+    --reading-bg:  #f0ece4;
+    --serial-bg:   #f0ece4;
+    --var-desc-bg: #faf7f0;
+  }
+  body.dark {
+    --bg:          #1a1918;
+    --bg2:         #222120;
+    --bg3:         #282624;
+    --bg4:         #2e2c2a;
+    --bg5:         #242220;
+    --border:      #444;
+    --border2:     #383634;
+    --text:        #e8e4dc;
+    --text2:       #c0bbb4;
+    --text3:       #777;
+    --text4:       #aaa;
+    --panel-hd:    #2a2826;
+    --stat-bg:     #282624;
+    --panel-bg:    #252321;
+    --input-bg:    #2a2826;
+    --nav-hover:   #2e2c2a;
+    --nav-active:  #e8e4dc;
+    --nav-actxt:   #1a1918;
+    --rail-bg:     #1e1c1a;
+    --rail-hover:  #2e2c2a;
+    --titlebar:    #1e1c1a;
+    --topbar:      #222120;
+    --statusbar:   #1a1918;
+    --spot-bg:     #2a2826;
+    --note-bg:     #222120;
+    --annot-border:#444;
+    --reading-bg:  #2a2826;
+    --serial-bg:   #1e1c1a;
+    --var-desc-bg: #222120;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    font-family: 'Caveat', cursive;
+    min-height: 100vh;
+    color: var(--text);
+    transition: background 0.25s, color 0.25s;
+  }
+  .outer { max-width: 1600px; margin: 0 auto; padding: 24px 20px; }
+  .page-title { font-size: 28px; font-weight: 700; margin-bottom: 6px; color: var(--text); letter-spacing: -0.5px; }
+  .page-sub { font-size: 18px; color: var(--text3); margin-bottom: 24px; }
+
+  .var-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .var-tab {
+    padding: 8px 22px; background: transparent; border: 2px solid var(--border);
+    border-radius: 4px; font-family: inherit; font-size: 18px; cursor: pointer;
+    color: var(--text3); transition: all 0.15s;
+  }
+  .var-tab.active { background: var(--nav-active); border-color: var(--nav-active); color: var(--nav-actxt); }
+  .var-label { font-size: 14px; color: var(--text3); margin-left: 6px; align-self: center; }
+
+  .wf-frame {
+    border: 2.5px solid var(--border); border-radius: 6px; background: var(--bg2);
+    overflow: hidden; box-shadow: 4px 4px 0 var(--border); height: 680px;
+    display: flex; flex-direction: column; position: relative;
+  }
+  .wf-titlebar {
+    background: var(--titlebar); border-bottom: 2px solid var(--border);
+    padding: 0 14px; height: 38px; display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  }
+  .wf-dots { display: flex; gap: 5px; }
+  .wf-dot { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--border); background: var(--bg4); }
+  .wf-apptitle { font-size: 15px; font-weight: 600; color: var(--text2); flex: 1; }
+  .wf-titlebar-right { display: flex; gap: 10px; align-items: center; }
+  .wf-badge {
+    font-size: 13px; background: var(--bg4); border: 1.5px solid var(--border);
+    border-radius: 3px; padding: 1px 8px; color: var(--text4);
+  }
+  .wf-badge.green { background: #d4edda; border-color: #82c996; color: #2d6a3f; }
+  .wf-badge.yellow { background: #fff3cd; border-color: #c9a227; color: #7a5c00; }
+  .wf-badge.red { background: #fde8e8; border-color: #d88; color: #8b2222; }
+  body.dark .wf-badge.green { background: #1a3d26; border-color: #2d7a46; color: #6ecf8e; }
+  body.dark .wf-badge.yellow { background: #3a2e00; border-color: #8a6f00; color: #e0b840; }
+  body.dark .wf-badge.red { background: #3a1a1a; border-color: #8b3333; color: #e07070; }
+
+  .wf-body { display: flex; flex: 1; overflow: hidden; }
+
+  /* SIDEBAR V1 */
+  .sidebar-v1 {
+    width: 220px; background: var(--bg5); border-right: 2px solid var(--border);
+    display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.2s;
+  }
+  .sidebar-v1.collapsed { width: 54px; }
+
+  /* SIDEBAR V2 */
+  .sidebar-v2 {
+    width: 240px; background: var(--bg5); border-right: 2px solid var(--border);
+    display: flex; flex-direction: column; flex-shrink: 0; padding-top: 8px;
+  }
+
+  /* RAIL V3 */
+  .sidebar-v3-rail {
+    width: 56px; background: var(--rail-bg); border-right: 2px solid var(--border);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 8px 0; gap: 4px; flex-shrink: 0;
+  }
+  .sidebar-v3-panel {
+    width: 200px; background: var(--bg3); border-right: 2px dashed var(--border);
+    flex-shrink: 0; padding: 12px 10px; overflow: auto;
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 14px; cursor: pointer;
+    font-size: 17px; color: var(--text2); border-radius: 4px; margin: 2px 6px;
+    transition: background 0.1s; user-select: none;
+  }
+  .nav-item:hover { background: var(--nav-hover); }
+  .nav-item.active { background: var(--nav-active); color: var(--nav-actxt); }
+  .nav-icon {
+    width: 22px; height: 22px; background: var(--border); border: 1.5px solid var(--text3);
+    border-radius: 3px; flex-shrink: 0; display: flex; align-items: center;
+    justify-content: center; font-size: 13px;
+  }
+  .nav-item.active .nav-icon { background: var(--text3); border-color: var(--text3); }
+  .sidebar-section-hd {
+    font-size: 13px; color: var(--text3); padding: 10px 14px 3px;
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+
+  .rail-btn {
+    width: 40px; height: 40px; background: transparent; border: 1.5px solid transparent;
+    border-radius: 4px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 18px; color: var(--text3); transition: background 0.1s;
+  }
+  .rail-btn:hover { background: var(--rail-hover); }
+  .rail-btn.active { background: var(--nav-active); color: var(--nav-actxt); border-color: var(--nav-active); }
+
+  .wf-main { flex: 1; overflow: auto; display: flex; flex-direction: column; }
+  .wf-topbar {
+    height: 42px; border-bottom: 1.5px solid var(--border2); background: var(--topbar);
+    display: flex; align-items: center; padding: 0 16px; gap: 10px; flex-shrink: 0;
+  }
+  .wf-screen-title { font-size: 19px; font-weight: 700; flex: 1; color: var(--text); }
+
+  .wf-btn {
+    padding: 3px 12px; border: 1.5px solid var(--border); border-radius: 3px;
+    background: var(--stat-bg); font-family: inherit; font-size: 15px;
+    cursor: pointer; color: var(--text2); transition: background 0.1s;
+  }
+  .wf-btn:hover { background: var(--bg4); }
+  .wf-btn.primary { background: var(--nav-active); color: var(--nav-actxt); border-color: var(--nav-active); }
+  .wf-btn.danger  { background: #fde8e8; border-color: #d88; color: #8b2222; }
+  .wf-btn.success { background: #d4edda; border-color: #82c996; color: #1a4d2e; }
+  body.dark .wf-btn.danger  { background: #3a1a1a; border-color: #8b3333; color: #e07070; }
+  body.dark .wf-btn.success { background: #1a3d26; border-color: #2d7a46; color: #6ecf8e; }
+
+  .screen-pad { padding: 16px; flex: 1; overflow: auto; }
+
+  /* Dashboard */
+  .stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-card {
+    border: 2px solid var(--border); border-radius: 4px; padding: 12px 14px;
+    background: var(--stat-bg); box-shadow: 2px 2px 0 var(--border2);
+  }
+  .stat-label { font-size: 14px; color: var(--text3); }
+  .stat-val { font-size: 32px; font-weight: 700; color: var(--text); }
+  .stat-sub { font-size: 13px; color: var(--text3); }
+  .dash-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .wf-panel {
+    border: 2px solid var(--border); border-radius: 4px; background: var(--panel-bg);
+    overflow: hidden; box-shadow: 2px 2px 0 var(--border2);
+  }
+  .wf-panel-hd {
+    background: var(--panel-hd); border-bottom: 1.5px solid var(--border2);
+    padding: 6px 12px; font-size: 16px; font-weight: 600; color: var(--text);
+  }
+  .wf-panel-body { padding: 10px 12px; }
+
+  .alert-row {
+    display: flex; align-items: center; gap: 8px; padding: 5px 0;
+    border-bottom: 1px dashed var(--border2); font-size: 15px; color: var(--text2);
+  }
+  .alert-dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--border); background: #f8e5a0; flex-shrink: 0; }
+  .alert-dot.red   { background: #f4aaaa; border-color: #d66; }
+  .alert-dot.green { background: #a8e6b8; border-color: #4a9; }
+
+  .cap-bar-bg {
+    height: 18px; background: var(--bg4); border: 1.5px solid var(--border);
+    border-radius: 3px; margin: 6px 0; overflow: hidden;
+  }
+  .cap-bar-fill {
+    height: 100%;
+    background: repeating-linear-gradient(45deg, var(--text3), var(--text3) 3px, var(--border) 3px, var(--border) 8px);
+    border-right: 1.5px solid var(--text3);
+  }
+
+  /* Parking map */
+  .parking-grid-container {
+    border: 2px solid var(--border); border-radius: 4px; background: var(--panel-bg);
+    padding: 14px; box-shadow: 2px 2px 0 var(--border2); position: relative;
+  }
+  .parking-grid-label { font-size: 14px; color: var(--text3); margin-bottom: 10px; }
+  .parking-row { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+  .aisle { height: 16px; margin: 2px 0; display: flex; align-items: center; padding-left: 4px; font-size: 12px; color: var(--border); letter-spacing: 1px; }
+
+  .parking-spot {
+    width: 40px; height: 52px; border: 2px solid var(--border); border-radius: 3px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 12px; color: var(--text3); cursor: pointer; transition: all 0.15s;
+    position: relative; user-select: none; background: var(--spot-bg);
+  }
+  .parking-spot:hover { border-color: var(--text2); }
+  .parking-spot.occupied {
+    background: repeating-linear-gradient(45deg, var(--bg4), var(--bg4) 3px, var(--border) 3px, var(--border) 7px);
+    border-color: var(--text3); color: var(--text3);
+  }
+  .parking-spot.reserved { background: #f5f0e0; border-color: #c9a227; border-style: dashed; color: #8a7000; }
+  body.dark .parking-spot.reserved { background: #3a2e00; border-color: #8a6f00; color: #e0b840; }
+  .spot-id { font-size: 11px; font-weight: 600; }
+  .spot-pulse { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid #4a9; background: #a8e6b8; position: absolute; top: 3px; right: 3px; }
+  .spot-pulse.occ { background: #f4aaaa; border-color: #d66; }
+  .spot-pulse.anim { animation: blink 1s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* Gate */
+  .gate-block {
+    border: 2px solid var(--border); border-radius: 4px; background: var(--stat-bg);
+    padding: 10px 12px; box-shadow: 2px 2px 0 var(--border2);
+  }
+  .gate-name { font-size: 16px; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+  .gate-mode-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 14px; color: var(--text3); }
+  .mode-toggle { display: flex; border: 1.5px solid var(--border); border-radius: 3px; overflow: hidden; font-size: 13px; }
+  .mode-opt { padding: 2px 10px; cursor: pointer; background: var(--bg5); color: var(--text3); user-select: none; transition: all 0.1s; }
+  .mode-opt.active { background: var(--nav-active); color: var(--nav-actxt); }
+  .gate-actions { display: flex; gap: 6px; align-items: center; }
+  .gate-status-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 13px; color: var(--text3); }
+
+  .gate-on-map {
+    display: flex; align-items: center; gap: 6px; border: 2px dashed var(--border);
+    border-radius: 3px; padding: 4px 8px; background: var(--bg3); cursor: pointer;
+    font-size: 14px; user-select: none; width: fit-content; color: var(--text2);
+  }
+  .gate-on-map.manual { border-color: #c9a227; background: #fffbf0; }
+  body.dark .gate-on-map.manual { background: #3a2e00; }
+
+  .legend { display: flex; gap: 16px; font-size: 14px; color: var(--text3); align-items: center; margin-top: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-box { width: 14px; height: 14px; border: 1.5px solid var(--border); border-radius: 2px; background: var(--spot-bg); }
+  .legend-box.occ { background: repeating-linear-gradient(45deg, var(--bg4), var(--bg4) 2px, var(--border) 2px, var(--border) 5px); }
+  .legend-box.res { background: #f5f0e0; border-color: #c9a227; border-style: dashed; }
+  body.dark .legend-box.res { background: #3a2e00; }
+
+  /* Tables */
+  .log-table, .admin-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .log-table th, .admin-table th {
+    background: var(--panel-hd); border-bottom: 2px solid var(--border);
+    padding: 6px 10px; text-align: left; font-weight: 600; color: var(--text);
+  }
+  .log-table td, .admin-table td { padding: 5px 10px; border-bottom: 1px dashed var(--border2); color: var(--text4); }
+  .log-table tr:hover td, .admin-table tr:hover td { background: var(--bg3); }
+  .admin-table td { padding: 6px 10px; }
+
+  .log-chip { font-size: 12px; padding: 1px 7px; border-radius: 2px; border: 1px solid var(--border); background: var(--bg5); color: var(--text4); }
+  .log-chip.entry { background: #d4edda; border-color: #82c996; color: #1a4d2e; }
+  .log-chip.exit  { background: #fde8e8; border-color: #d88;    color: #8b2222; }
+  .log-chip.gate  { background: #e8d8f0; border-color: #b08acd; color: #5a2e82; }
+  .log-chip.alert { background: #fff3cd; border-color: #c9a227; color: #7a5c00; }
+  body.dark .log-chip.entry { background: #1a3d26; border-color: #2d7a46; color: #6ecf8e; }
+  body.dark .log-chip.exit  { background: #3a1a1a; border-color: #8b3333; color: #e07070; }
+  body.dark .log-chip.gate  { background: #2a1a3a; border-color: #7a5aad; color: #c0a0f0; }
+  body.dark .log-chip.alert { background: #3a2e00; border-color: #8a6f00; color: #e0b840; }
+
+  /* Arduino */
+  .arduino-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .port-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .port-input {
+    flex: 1; border: 1.5px solid var(--border); border-radius: 3px; padding: 4px 8px;
+    font-family: inherit; font-size: 16px; background: var(--input-bg); color: var(--text);
+  }
+  .live-readings { display: flex; flex-direction: column; gap: 5px; }
+  .reading-row {
+    display: flex; justify-content: space-between; padding: 4px 8px;
+    background: var(--reading-bg); border: 1px solid var(--border2); border-radius: 2px; font-size: 14px; color: var(--text4);
+  }
+  .reading-val { font-weight: 600; color: var(--text); }
+
+  /* Misc */
+  .annotation {
+    display: flex; align-items: flex-start; gap: 6px; font-size: 14px; color: var(--text3);
+    padding: 5px 8px; border-left: 2px dashed var(--annot-border); margin-bottom: 4px;
+    background: var(--note-bg);
+  }
+  .annot-arrow { color: var(--border); font-size: 16px; }
+  .var-desc {
+    font-size: 16px; color: var(--text3); margin-bottom: 12px; padding: 8px 14px;
+    border-left: 3px solid var(--border); background: var(--var-desc-bg); border-radius: 0 4px 4px 0;
+  }
+  .status-bar {
+    height: 26px; background: var(--statusbar); border-top: 1.5px solid var(--border);
+    display: flex; align-items: center; padding: 0 12px; gap: 16px; font-size: 13px;
+    color: var(--text3); flex-shrink: 0;
+  }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #a8e6b8; border: 1px solid #4a9; display: inline-block; margin-right: 3px; }
+
+  /* Tweaks panel */
+  .tweaks-panel {
+    position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+    background: var(--stat-bg); border: 2px solid var(--border);
+    border-radius: 6px; padding: 14px 16px; width: 240px;
+    box-shadow: 4px 4px 0 var(--border2); font-family: inherit;
+    display: none; flex-direction: column; gap: 14px;
+  }
+  .tweaks-panel.visible { display: flex; }
+  .tweaks-hd { font-size: 17px; font-weight: 700; color: var(--text); border-bottom: 1.5px dashed var(--border2); padding-bottom: 8px; }
+  .tweaks-row { display: flex; flex-direction: column; gap: 5px; }
+  .tweaks-label { font-size: 14px; color: var(--text3); }
+  .tweaks-font-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .tweaks-font-opt {
+    padding: 5px 8px; border: 1.5px solid var(--border); border-radius: 3px;
+    background: var(--bg5); cursor: pointer; font-size: 14px; color: var(--text2);
+    text-align: center; transition: all 0.1s;
+  }
+  .tweaks-font-opt.active { background: var(--nav-active); color: var(--nav-actxt); border-color: var(--nav-active); }
+  .tweaks-toggle {
+    display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;
+  }
+  .toggle-track {
+    width: 36px; height: 20px; border-radius: 10px; border: 1.5px solid var(--border);
+    background: var(--bg4); position: relative; transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle-track.on { background: var(--nav-active); border-color: var(--nav-active); }
+  .toggle-thumb {
+    width: 14px; height: 14px; border-radius: 50%; background: var(--text3);
+    position: absolute; top: 2px; left: 2px; transition: transform 0.2s, background 0.2s;
+  }
+  .toggle-track.on .toggle-thumb { transform: translateX(16px); background: var(--nav-actxt); }
+  .toggle-text { font-size: 16px; color: var(--text2); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "font": "Patrick Hand",
+  "dark": false
+}/*EDITMODE-END*/;
+</script>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+// ── Font map ─────────────────────────────────────────────────────────────────
+const FONTS = [
+  { id:'Caveat',              label:'Caveat',     style:"'Caveat', cursive" },
+  { id:'Patrick Hand',        label:'Patrick',    style:"'Patrick Hand', cursive" },
+  { id:'Kalam',               label:'Kalam',      style:"'Kalam', cursive" },
+  { id:'Architects Daughter', label:'Architect',  style:"'Architects Daughter', cursive" },
+];
+
+// ── Shared data ───────────────────────────────────────────────────────────────
+const SPOTS = [
+  ...Array.from({length:6},(_,i)=>({id:`A${i+1}`,row:'A',occ:[1,3,4].includes(i)})),
+  ...Array.from({length:6},(_,i)=>({id:`B${i+1}`,row:'B',occ:[0,2,5].includes(i)})),
+  ...Array.from({length:6},(_,i)=>({id:`C${i+1}`,row:'C',occ:[1,2].includes(i),res:i===4})),
+  ...Array.from({length:6},(_,i)=>({id:`D${i+1}`,row:'D',occ:[3,4,5].includes(i)})),
+];
+const ROWS = ['A','B','C','D'];
+const GATES_INIT = [
+  {id:'G1',name:'Gate 1 — Entrada Norte',mode:'AUTO',open:false},
+  {id:'G2',name:'Gate 2 — Salida Sur',mode:'AUTO',open:false},
+  {id:'G3',name:'Gate 3 — Entrada/Salida Este',mode:'MANUAL',open:true},
+];
+const LOG_ROWS = [
+  {ts:'09:42:11',type:'entry',msg:'Vehículo entró por Gate 1',spot:'A3'},
+  {ts:'09:38:55',type:'gate',msg:'Gate 3 cambiado a MANUAL',spot:'—'},
+  {ts:'09:35:02',type:'exit',msg:'Vehículo salió por Gate 2',spot:'B6'},
+  {ts:'09:31:18',type:'alert',msg:'Sensor B2 sin señal',spot:'B2'},
+  {ts:'09:28:44',type:'entry',msg:'Vehículo entró por Gate 3',spot:'C1'},
+  {ts:'09:21:09',type:'exit',msg:'Vehículo salió por Gate 1',spot:'A1'},
+  {ts:'09:15:33',type:'alert',msg:'Capacidad al 80%',spot:'—'},
+  {ts:'09:10:07',type:'gate',msg:'Gate 1 abierta manualmente',spot:'—'},
+];
+
+// ── Shared components ─────────────────────────────────────────────────────────
+function TitleBar({title}) {
+  return (
+    <div className="wf-titlebar">
+      <div className="wf-dots"><div className="wf-dot"/><div className="wf-dot"/><div className="wf-dot"/></div>
+      <div className="wf-apptitle">🚗 {title}</div>
+      <div className="wf-titlebar-right">
+        <span className="wf-badge green">● Arduino OK</span>
+        <span className="wf-badge">18/24 spots</span>
+      </div>
+    </div>
+  );
+}
+
+function StatusBar() {
+  return (
+    <div className="status-bar">
+      <span><span className="status-dot"/>Arduino COM3 — conectado</span>
+      <span>Ocupación: 75%</span>
+      <span>Última lectura: hace 2s</span>
+      <span style={{marginLeft:'auto'}}>Smart Parking Lot v1.0</span>
+    </div>
+  );
+}
+
+function GateControl({gates, setGates, compact}) {
+  const toggle = id => setGates(g=>g.map(gate=>gate.id===id?{...gate,mode:gate.mode==='AUTO'?'MANUAL':'AUTO',open:false}:gate));
+  const toggleOpen = id => setGates(g=>g.map(gate=>gate.id===id?{...gate,open:!gate.open}:gate));
+  return (
+    <>
+      {gates.map(gate=>(
+        <div key={gate.id} className="gate-block" style={compact?{padding:'7px 10px'}:{}}>
+          <div className="gate-name" style={compact?{fontSize:14}:{}}>{gate.name}</div>
+          <div className="gate-mode-row">
+            Modo:
+            <div className="mode-toggle">
+              <div className={`mode-opt ${gate.mode==='AUTO'?'active':''}`} onClick={()=>gate.mode!=='AUTO'&&toggle(gate.id)}>AUTO</div>
+              <div className={`mode-opt ${gate.mode==='MANUAL'?'active':''}`} onClick={()=>gate.mode!=='MANUAL'&&toggle(gate.id)}>MANUAL</div>
+            </div>
+          </div>
+          {gate.mode==='AUTO' && <div style={{fontSize:13,color:'var(--text3)',fontStyle:'italic'}}>Sistema controla automáticamente</div>}
+          {gate.mode==='MANUAL' && (
+            <div className="gate-actions">
+              <button className={`wf-btn ${gate.open?'danger':'success'}`} style={{fontSize:compact?13:15}} onClick={()=>toggleOpen(gate.id)}>
+                {gate.open?'⬆ Cerrar':'⬇ Abrir'}
+              </button>
+              <span style={{fontSize:13,color:gate.open?'#2d6a3f':'#8b2222',alignSelf:'center'}}>
+                {gate.open?'— Abierta':'— Cerrada'}
+              </span>
+            </div>
+          )}
+        </div>
+      ))}
+    </>
+  );
+}
+
+function GateChip({gate, compact, onClick}) {
+  return (
+    <div className={`gate-on-map ${gate.mode==='MANUAL'?'manual':''}`} onClick={onClick} title="Click para controlar gate">
+      <span>{gate.mode==='MANUAL'&&gate.open?'⬆':'🚧'}</span>
+      <span style={{fontWeight:600,fontSize:compact?12:13}}>{gate.id}</span>
+      <span style={{fontSize:11,padding:'1px 5px',borderRadius:2,background:gate.mode==='MANUAL'?'#ffe8a0':'var(--bg4)',border:'1px solid',borderColor:gate.mode==='MANUAL'?'#c9a227':'var(--border)',color:gate.mode==='MANUAL'?'#7a5c00':'var(--text3)'}}>
+        {gate.mode}
+      </span>
+      {gate.mode==='MANUAL' && <span style={{fontSize:11,color:gate.open?'#2d6a3f':'#8b2222'}}>{gate.open?'ABIERTA':'CERRADA'}</span>}
+    </div>
+  );
+}
+
+function ParkingMap({gates, setGates, onGateSelect}) {
+  const [spots, setSpots] = useState(SPOTS);
+  const [blink, setBlink] = useState('A3');
+  useEffect(()=>{
+    const t = setInterval(()=>setBlink(b=>b?null:'A3'),900);
+    return ()=>clearInterval(t);
+  },[]);
+  return (
+    <div className="parking-grid-container">
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
+        <div className="parking-grid-label">Plano del parqueadero — Planta 1</div>
+        <div className="legend">
+          <div className="legend-item"><div className="legend-box"/><span>Libre</span></div>
+          <div className="legend-item"><div className="legend-box occ"/><span>Ocupado</span></div>
+          <div className="legend-item"><div className="legend-box res"/><span>Reservado</span></div>
+        </div>
+      </div>
+      <div style={{display:'flex',gap:10,marginBottom:8,alignItems:'center'}}>
+        <GateChip gate={gates[0]} onClick={()=>onGateSelect&&onGateSelect(gates[0].id)}/>
+        <div style={{flex:1,borderBottom:'2px dashed var(--border2)'}}/>
+        <span style={{fontSize:12,color:'var(--border)'}}>NORTE</span>
+      </div>
+      {ROWS.map((row,ri)=>(
+        <div key={row}>
+          <div className="parking-row">
+            <span style={{width:18,fontSize:12,color:'var(--border)',fontWeight:600}}>{row}</span>
+            {spots.filter(s=>s.row===row).map(spot=>(
+              <div key={spot.id}
+                className={`parking-spot ${spot.occ?'occupied':''} ${spot.res?'reserved':''}`}
+                onClick={()=>setSpots(ss=>ss.map(s=>s.id===spot.id?{...s,occ:!s.occ,res:false}:s))}
+                title={`Spot ${spot.id} — click para cambiar`}>
+                <div className="spot-id">{spot.id}</div>
+                <div className={`spot-pulse ${spot.occ?'occ':''} ${spot.id===blink?'anim':''}`}/>
+              </div>
+            ))}
+            {ri===1 && <div style={{marginLeft:8}}><GateChip gate={gates[2]} compact onClick={()=>onGateSelect&&onGateSelect(gates[2].id)}/></div>}
+          </div>
+          {ri<ROWS.length-1 && <div className="aisle">— — — PASILLO — — —</div>}
+        </div>
+      ))}
+      <div style={{display:'flex',gap:10,marginTop:8,alignItems:'center'}}>
+        <span style={{fontSize:12,color:'var(--border)'}}>SUR</span>
+        <div style={{flex:1,borderBottom:'2px dashed var(--border2)'}}/>
+        <GateChip gate={gates[1]} onClick={()=>onGateSelect&&onGateSelect(gates[1].id)}/>
+      </div>
+      <div style={{marginTop:10,fontSize:13,color:'var(--text3)',fontStyle:'italic'}}>
+        ↑ Click en un spot para cambiar su estado · Click en una gate para controlarla
+      </div>
+    </div>
+  );
+}
+
+// ── Screens ───────────────────────────────────────────────────────────────────
+function ScreenDashboard() {
+  return (
+    <div className="screen-pad">
+      <div className="stat-grid">
+        {[{label:'Spots Ocupados',val:'18',sub:'de 24 totales'},{label:'Disponibles',val:'5',sub:'1 reservado'},{label:'Vehículos hoy',val:'47',sub:'+12% vs ayer'},{label:'Capacidad',val:'75%',sub:'nivel normal'}].map(s=>(
+          <div key={s.label} className="stat-card">
+            <div className="stat-label">{s.label}</div>
+            <div className="stat-val">{s.val}</div>
+            <div className="stat-sub">{s.sub}</div>
+          </div>
+        ))}
+      </div>
+      <div className="dash-bottom">
+        <div className="wf-panel">
+          <div className="wf-panel-hd">Ocupación por zona</div>
+          <div className="wf-panel-body">
+            {['Zona A','Zona B','Zona C','Zona D'].map((z,i)=>{
+              const pcts=[83,67,50,100];
+              return (
+                <div key={z} style={{marginBottom:8}}>
+                  <div style={{display:'flex',justifyContent:'space-between',fontSize:15}}>
+                    <span>{z}</span><span style={{color:'var(--text3)'}}>{pcts[i]}%</span>
+                  </div>
+                  <div className="cap-bar-bg"><div className="cap-bar-fill" style={{width:`${pcts[i]}%`}}/></div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <div className="wf-panel">
+          <div className="wf-panel-hd">Alertas recientes</div>
+          <div className="wf-panel-body">
+            {[{c:'red',msg:'Sensor B2 sin señal — hace 11 min'},{c:'yellow',msg:'Capacidad >80% — hace 18 min'},{c:'green',msg:'Gate 3 restaurada — hace 22 min'},{c:'green',msg:'Sistema iniciado — 09:00:00'}].map((a,i)=>(
+              <div key={i} className="alert-row">
+                <div className={`alert-dot ${a.c}`}/><span>{a.msg}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScreenMap({gates, setGates}) {
+  return (
+    <div style={{display:'flex',gap:14,height:'100%',padding:16,overflow:'hidden'}}>
+      <div style={{flex:1,overflow:'auto'}}>
+        <ParkingMap gates={gates} setGates={setGates}/>
+      </div>
+      <div style={{width:220,flexShrink:0,display:'flex',flexDirection:'column',gap:10,overflow:'auto'}}>
+        <div className="wf-panel-hd" style={{fontSize:16,fontWeight:700,paddingBottom:4}}>Control de Gates</div>
+        <GateControl gates={gates} setGates={setGates} compact/>
+      </div>
+    </div>
+  );
+}
+
+function ScreenLog() {
+  return (
+    <div className="screen-pad">
+      <div style={{display:'flex',gap:8,marginBottom:12,alignItems:'center'}}>
+        <input style={{flex:1,border:'1.5px solid var(--border)',borderRadius:3,padding:'4px 10px',fontFamily:'inherit',fontSize:16,background:'var(--input-bg)',color:'var(--text)'}} placeholder="Filtrar eventos..."/>
+        {['Todos','Entradas','Salidas','Gates','Alertas'].map(f=>(
+          <button key={f} className={`wf-btn ${f==='Todos'?'primary':''}`} style={{fontSize:14}}>{f}</button>
+        ))}
+      </div>
+      <div className="wf-panel">
+        <table className="log-table">
+          <thead><tr><th>Hora</th><th>Tipo</th><th>Evento</th><th>Spot</th></tr></thead>
+          <tbody>
+            {LOG_ROWS.map((r,i)=>(
+              <tr key={i}>
+                <td style={{color:'var(--text3)',fontFamily:'monospace',fontSize:14}}>{r.ts}</td>
+                <td><span className={`log-chip ${r.type}`}>{r.type}</span></td>
+                <td>{r.msg}</td>
+                <td style={{color:'var(--text3)'}}>{r.spot}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ScreenAdmin() {
+  return (
+    <div className="screen-pad">
+      <div style={{display:'flex',gap:8,marginBottom:12}}>
+        <button className="wf-btn primary">+ Agregar Spot</button>
+        <button className="wf-btn">Exportar</button>
+        <div style={{flex:1}}/>
+        <input style={{border:'1.5px solid var(--border)',borderRadius:3,padding:'4px 10px',fontFamily:'inherit',fontSize:16,background:'var(--input-bg)',color:'var(--text)',width:200}} placeholder="Buscar spot..."/>
+      </div>
+      <div className="wf-panel">
+        <table className="admin-table">
+          <thead><tr><th>ID</th><th>Zona</th><th>Estado</th><th>Tipo</th><th>Sensor</th><th>Acciones</th></tr></thead>
+          <tbody>
+            {SPOTS.slice(0,8).map(s=>(
+              <tr key={s.id}>
+                <td style={{fontWeight:600}}>{s.id}</td>
+                <td>{s.row}</td>
+                <td><span className={`log-chip ${s.occ?'exit':s.res?'alert':'entry'}`}>{s.occ?'Ocupado':s.res?'Reservado':'Libre'}</span></td>
+                <td style={{color:'var(--text3)'}}>Estándar</td>
+                <td><span className={`log-chip ${s.occ?'entry':'alert'}`}>{s.occ?'OK':'—'}</span></td>
+                <td style={{display:'flex',gap:5}}>
+                  <button className="wf-btn" style={{fontSize:13}}>Editar</button>
+                  <button className="wf-btn danger" style={{fontSize:13}}>Desactivar</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ScreenArduino() {
+  const [connected, setConnected] = useState(true);
+  return (
+    <div className="screen-pad">
+      <div className="arduino-grid">
+        <div className="wf-panel">
+          <div className="wf-panel-hd">Conexión</div>
+          <div className="wf-panel-body">
+            <div className="gate-status-bar" style={{marginBottom:8}}>
+              <span className={`wf-badge ${connected?'green':'red'}`}>{connected?'● Conectado':'○ Desconectado'}</span>
+            </div>
+            <div className="port-row">
+              <span style={{fontSize:15,color:'var(--text3)',width:60}}>Puerto:</span>
+              <input className="port-input" defaultValue="COM3"/>
+            </div>
+            <div className="port-row">
+              <span style={{fontSize:15,color:'var(--text3)',width:60}}>Baud:</span>
+              <input className="port-input" defaultValue="9600"/>
+            </div>
+            <div style={{display:'flex',gap:8,marginTop:8}}>
+              <button className={`wf-btn ${connected?'danger':'success'}`} onClick={()=>setConnected(c=>!c)}>
+                {connected?'Desconectar':'Conectar'}
+              </button>
+              <button className="wf-btn">Escanear puertos</button>
+            </div>
+          </div>
+        </div>
+        <div className="wf-panel">
+          <div className="wf-panel-hd">Lecturas en vivo — IArduinoReader</div>
+          <div className="wf-panel-body">
+            <div className="live-readings">
+              {SPOTS.slice(0,6).map(s=>(
+                <div key={s.id} className="reading-row">
+                  <span style={{color:'var(--text3)'}}>Sensor {s.id}</span>
+                  <span className="reading-val">{s.occ?'1 — OCUPADO':'0 — LIBRE'}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="wf-panel" style={{gridColumn:'1/-1'}}>
+          <div className="wf-panel-hd">Log serial</div>
+          <div className="wf-panel-body" style={{background:'var(--serial-bg)',fontFamily:'monospace',fontSize:13,lineHeight:1.6,color:'var(--text4)',borderRadius:3,padding:'8px 10px'}}>
+            <div>[09:42:13] READ A3=1 B1=0 B3=1 C2=1</div>
+            <div>[09:42:11] READ A1=0 A2=0 A3=1 A4=1</div>
+            <div>[09:42:09] GATE G1 OPENED</div>
+            <div>[09:42:07] HEARTBEAT OK</div>
+            <div style={{color:'var(--text3)'}}>[09:42:05] READ A3=0 → cambio detectado</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Nav config ────────────────────────────────────────────────────────────────
+const SCREENS = [
+  {id:'dashboard',label:'Dashboard',icon:'⊞'},
+  {id:'map',label:'Mapa de Spots',icon:'⊡'},
+  {id:'log',label:'Historial',icon:'≡'},
+  {id:'admin',label:'Gestión Spots',icon:'⚙'},
+  {id:'arduino',label:'Arduino / HW',icon:'⚡'},
+];
+
+function renderScreen(screen, gates, setGates) {
+  switch(screen) {
+    case 'dashboard': return <ScreenDashboard/>;
+    case 'map':       return <ScreenMap gates={gates} setGates={setGates}/>;
+    case 'log':       return <ScreenLog/>;
+    case 'admin':     return <ScreenAdmin/>;
+    case 'arduino':   return <ScreenArduino/>;
+    default:          return null;
+  }
+}
+
+// ── Variations ────────────────────────────────────────────────────────────────
+function Variation1({gates, setGates}) {
+  const [screen, setScreen] = useState('map');
+  const [collapsed, setCollapsed] = useState(false);
+  return (
+    <div className="wf-frame">
+      <TitleBar title="Smart Parking — Admin"/>
+      <div className="wf-body">
+        <div className={`sidebar-v1 ${collapsed?'collapsed':''}`}>
+          <div style={{padding:'8px 6px 4px',display:'flex',justifyContent:collapsed?'center':'flex-end'}}>
+            <button className="wf-btn" style={{fontSize:16,padding:'2px 8px'}} onClick={()=>setCollapsed(c=>!c)}>{collapsed?'→':'☰'}</button>
+          </div>
+          {SCREENS.map(s=>(
+            <div key={s.id} className={`nav-item ${screen===s.id?'active':''}`} onClick={()=>setScreen(s.id)} title={s.label}>
+              <div className="nav-icon">{s.icon}</div>
+              {!collapsed && <span>{s.label}</span>}
+            </div>
+          ))}
+          <div style={{flex:1}}/>
+          <div className="nav-item" title="Configuración">
+            <div className="nav-icon">⚙</div>
+            {!collapsed && <span>Configuración</span>}
+          </div>
+        </div>
+        <div className="wf-main">
+          <div className="wf-topbar">
+            <span className="wf-screen-title">{SCREENS.find(s=>s.id===screen)?.label}</span>
+            <span className="wf-badge yellow">⚠ 2 alertas</span>
+            <button className="wf-btn">↻ Actualizar</button>
+          </div>
+          <div style={{flex:1,overflow:'hidden',display:'flex',flexDirection:'column'}}>
+            {renderScreen(screen, gates, setGates)}
+          </div>
+        </div>
+      </div>
+      <StatusBar/>
+    </div>
+  );
+}
+
+function Variation2({gates, setGates}) {
+  const [screen, setScreen] = useState('map');
+  const groups = [{label:'MONITOREO',items:['dashboard','map','log']},{label:'ADMINISTRACIÓN',items:['admin','arduino']}];
+  return (
+    <div className="wf-frame">
+      <TitleBar title="Smart Parking — Admin"/>
+      <div className="wf-body">
+        <div className="sidebar-v2">
+          <div style={{padding:'8px 14px 12px',borderBottom:'1.5px solid var(--border2)'}}>
+            <div style={{fontSize:14,color:'var(--text3)'}}>Parqueadero</div>
+            <div style={{fontSize:19,fontWeight:700,color:'var(--text)'}}>Central Norte</div>
+            <div style={{marginTop:4,display:'flex',gap:6}}>
+              <span className="wf-badge green" style={{fontSize:12}}>● En línea</span>
+              <span className="wf-badge" style={{fontSize:12}}>24 spots</span>
+            </div>
+          </div>
+          {groups.map(g=>(
+            <div key={g.label}>
+              <div className="sidebar-section-hd">{g.label}</div>
+              {g.items.map(id=>{
+                const s=SCREENS.find(x=>x.id===id);
+                return (
+                  <div key={id} className={`nav-item ${screen===id?'active':''}`} onClick={()=>setScreen(id)}>
+                    <div className="nav-icon">{s.icon}</div><span>{s.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+          <div style={{flex:1}}/>
+          <div style={{padding:'10px 14px',borderTop:'1.5px solid var(--border2)'}}>
+            <div style={{fontSize:14,color:'var(--text3)'}}>Sesión activa</div>
+            <div style={{fontSize:15,fontWeight:600,color:'var(--text)'}}>admin@parking.local</div>
+          </div>
+        </div>
+        <div className="wf-main">
+          <div className="wf-topbar">
+            <span className="wf-screen-title">{SCREENS.find(s=>s.id===screen)?.label}</span>
+            <span className="wf-badge yellow">⚠ 2 alertas</span>
+            <button className="wf-btn">↻</button>
+          </div>
+          <div style={{flex:1,overflow:'hidden',display:'flex',flexDirection:'column'}}>
+            {renderScreen(screen, gates, setGates)}
+          </div>
+        </div>
+      </div>
+      <StatusBar/>
+    </div>
+  );
+}
+
+function Variation3({gates, setGates}) {
+  const [screen, setScreen] = useState('map');
+  const [panelOpen, setPanelOpen] = useState(true);
+  return (
+    <div className="wf-frame">
+      <TitleBar title="Smart Parking"/>
+      <div className="wf-body">
+        <div className="sidebar-v3-rail">
+          <div style={{width:36,height:36,background:'var(--nav-active)',borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center',color:'var(--nav-actxt)',fontSize:18,marginBottom:8}}>🚗</div>
+          {SCREENS.map(s=>(
+            <div key={s.id} className={`rail-btn ${screen===s.id?'active':''}`} onClick={()=>{setScreen(s.id);setPanelOpen(true);}} title={s.label}>{s.icon}</div>
+          ))}
+          <div style={{flex:1}}/>
+          <div className="rail-btn" onClick={()=>setPanelOpen(p=>!p)} title="Alternar panel">◧</div>
+          <div className="rail-btn" title="Configuración">⚙</div>
+        </div>
+        {panelOpen && (
+          <div className="sidebar-v3-panel">
+            <div style={{fontWeight:700,fontSize:17,marginBottom:10,borderBottom:'1.5px solid var(--border2)',paddingBottom:6,color:'var(--text)'}}>
+              {SCREENS.find(s=>s.id===screen)?.label}
+            </div>
+            {screen==='map' && (
+              <>
+                <div style={{fontSize:14,color:'var(--text3)',marginBottom:8}}>Control de Gates</div>
+                <GateControl gates={gates} setGates={setGates} compact/>
+                <div style={{marginTop:12,fontSize:14,color:'var(--text3)',borderTop:'1.5px dashed var(--border2)',paddingTop:8}}>
+                  <div style={{fontWeight:600,marginBottom:4}}>Leyenda</div>
+                  <div className="legend-item" style={{marginBottom:4}}><div className="legend-box"/><span style={{fontSize:13}}>Libre</span></div>
+                  <div className="legend-item" style={{marginBottom:4}}><div className="legend-box occ"/><span style={{fontSize:13}}>Ocupado</span></div>
+                  <div className="legend-item" style={{marginBottom:4}}><div className="legend-box res"/><span style={{fontSize:13}}>Reservado</span></div>
+                </div>
+              </>
+            )}
+            {screen==='dashboard' && (
+              <div>
+                {[{label:'Ocupación',val:'75%'},{label:'Vehículos hoy',val:'47'},{label:'Alertas activas',val:'2'}].map(s=>(
+                  <div key={s.label} className="stat-card" style={{marginBottom:8}}>
+                    <div className="stat-label">{s.label}</div>
+                    <div className="stat-val">{s.val}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {screen==='arduino' && (
+              <div>
+                <div style={{marginBottom:8}}><span className="wf-badge green">● COM3 Conectado</span></div>
+                {[['Baud Rate','9600'],['Lecturas/s','~4'],['Sensores OK','23/24']].map(([k,v])=>(
+                  <div key={k} className="reading-row" style={{marginBottom:4}}>
+                    <span style={{color:'var(--text3)'}}>{k}</span><span className="reading-val">{v}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {(screen==='log'||screen==='admin') && (
+              <div style={{fontSize:14,color:'var(--text3)',fontStyle:'italic'}}>Panel contextual — filtros y acciones rápidas aquí</div>
+            )}
+          </div>
+        )}
+        <div className="wf-main">
+          <div style={{flex:1,overflow:'hidden',display:'flex',flexDirection:'column'}}>
+            {renderScreen(screen, gates, setGates)}
+          </div>
+        </div>
+      </div>
+      <StatusBar/>
+    </div>
+  );
+}
+
+// ── Tweaks Panel ──────────────────────────────────────────────────────────────
+function TweaksPanel({visible, font, dark, onFont, onDark}) {
+  return (
+    <div className={`tweaks-panel ${visible?'visible':''}`}>
+      <div className="tweaks-hd">Tweaks</div>
+      <div className="tweaks-row">
+        <div className="tweaks-label">Fuente</div>
+        <div className="tweaks-font-grid">
+          {FONTS.map(f=>(
+            <div key={f.id} className={`tweaks-font-opt ${font===f.id?'active':''}`} style={{fontFamily:f.style}} onClick={()=>onFont(f.id)}>
+              {f.label}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="tweaks-row">
+        <div className="tweaks-label">Modo oscuro</div>
+        <div className="tweaks-toggle" onClick={()=>onDark(!dark)}>
+          <div className={`toggle-track ${dark?'on':''}`}><div className="toggle-thumb"/></div>
+          <span className="toggle-text">{dark?'Oscuro':'Claro'}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Root ──────────────────────────────────────────────────────────────────────
+const VARIATIONS = [
+  {id:'v1',label:'V1',desc:'NavigationView colapsable (estilo WinUI 3) — sidebar estándar, colapsable a íconos. El patrón más familiar para apps Windows modernas.'},
+  {id:'v2',label:'V2',desc:'Sidebar ancha con secciones agrupadas — muestra contexto del parqueadero (nombre, estado) siempre visible. Más compacto y orientado a ops.'},
+  {id:'v3',label:'V3',desc:'Rail de íconos + panel contextual deslizante — máximo espacio para el mapa. El panel lateral cambia según la pantalla activa.'},
+];
+
+function App() {
+  const defaults = window.TWEAK_DEFAULTS || {font:'Caveat', dark:false};
+  const [variation, setVariation] = useState(()=>localStorage.getItem('wf_variation')||'v1');
+  const [gates, setGates] = useState(GATES_INIT);
+  const [tweaksVisible, setTweaksVisible] = useState(false);
+  const [font, setFont] = useState(()=>localStorage.getItem('wf_font')||defaults.font);
+  const [dark, setDark] = useState(()=>localStorage.getItem('wf_dark')==='true'||(localStorage.getItem('wf_dark')===null&&defaults.dark));
+
+  // Apply font + dark to DOM
+  useEffect(()=>{
+    const f = FONTS.find(x=>x.id===font);
+    document.body.style.fontFamily = f ? f.style : "'Caveat', cursive";
+    localStorage.setItem('wf_font', font);
+  },[font]);
+  useEffect(()=>{
+    document.body.classList.toggle('dark', dark);
+    localStorage.setItem('wf_dark', dark);
+  },[dark]);
+
+  // Tweaks protocol
+  useEffect(()=>{
+    const handler = e => {
+      if(e.data?.type==='__activate_edit_mode')   setTweaksVisible(true);
+      if(e.data?.type==='__deactivate_edit_mode') setTweaksVisible(false);
+    };
+    window.addEventListener('message', handler);
+    window.parent.postMessage({type:'__edit_mode_available'},'*');
+    return ()=>window.removeEventListener('message', handler);
+  },[]);
+
+  const handleFont = f => {
+    setFont(f);
+    window.parent.postMessage({type:'__edit_mode_set_keys', edits:{font:f}},'*');
+  };
+  const handleDark = d => {
+    setDark(d);
+    window.parent.postMessage({type:'__edit_mode_set_keys', edits:{dark:d}},'*');
+  };
+
+  const switchVar = v => { setVariation(v); localStorage.setItem('wf_variation', v); };
+  const vdata = VARIATIONS.find(v=>v.id===variation);
+
+  return (
+    <div className="outer">
+      <div className="page-title">Smart Parking Lot — Wireframes</div>
+      <div className="page-sub">3 variaciones de layout · interactivo · C# / .NET 10</div>
+      <div className="var-tabs">
+        {VARIATIONS.map(v=>(
+          <button key={v.id} className={`var-tab ${variation===v.id?'active':''}`} onClick={()=>switchVar(v.id)}>{v.label}</button>
+        ))}
+        <span className="var-label">← selecciona variación</span>
+      </div>
+      <div className="var-desc">{vdata?.desc}</div>
+      {variation==='v1' && <Variation1 gates={gates} setGates={setGates}/>}
+      {variation==='v2' && <Variation2 gates={gates} setGates={setGates}/>}
+      {variation==='v3' && <Variation3 gates={gates} setGates={setGates}/>}
+      <div style={{marginTop:16,display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10}}>
+        {[
+          '🗺 Mapa interactivo — click en spots para cambiar estado libre/ocupado',
+          '🚧 Gates — toggle AUTO/MANUAL; en MANUAL aparecen botones Abrir/Cerrar',
+          '📺 Pantallas — Dashboard, Mapa, Historial, Gestión, Arduino — todas navegables',
+        ].map(n=>(
+          <div key={n} className="annotation"><span className="annot-arrow">↑</span><span>{n}</span></div>
+        ))}
+      </div>
+      <TweaksPanel visible={tweaksVisible} font={font} dark={dark} onFont={handleFont} onDark={handleDark}/>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

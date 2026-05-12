@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="SmartParkingLot.Gui.Pages.DashboardPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Height="56" Padding="20,0" ColumnSpacing="10"
+              Background="{ThemeResource Layer1Brush}"
+              BorderBrush="{ThemeResource StrokeBrush}"
+              BorderThickness="0,0,0,1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="Dashboard"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           Foreground="{ThemeResource Tx1Brush}" />
+                <TextBlock x:Name="UpdatedText"
+                           FontSize="11"
+                           Foreground="{ThemeResource Tx3Brush}" />
+            </StackPanel>
+            <Button Grid.Column="1" x:Name="RefreshBtn" Click="OnRefreshClick">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE72C;" FontSize="14" />
+                    <TextBlock Text="Actualizar" />
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" Padding="20" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="12">
+                <!-- Tiles -->
+                <Grid ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource TileStyle}" Grid.Column="0">
+                        <StackPanel>
+                            <TextBlock Text="Spots ocupados" Style="{StaticResource TileLabelTextStyle}" />
+                            <TextBlock x:Name="TileOccupied" Text="0" Style="{StaticResource TileValueTextStyle}" />
+                            <TextBlock x:Name="TileOccupiedSub" Text="de 0 totales" Style="{StaticResource TileSubTextStyle}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource TileStyle}" Grid.Column="1">
+                        <StackPanel>
+                            <TextBlock Text="Disponibles" Style="{StaticResource TileLabelTextStyle}" />
+                            <TextBlock x:Name="TileAvailable" Text="0" Style="{StaticResource TileValueTextStyle}" />
+                            <TextBlock x:Name="TileAvailableSub" Text="" Style="{StaticResource TileSubTextStyle}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource TileStyle}" Grid.Column="2">
+                        <StackPanel>
+                            <TextBlock Text="Solicitudes hoy" Style="{StaticResource TileLabelTextStyle}" />
+                            <TextBlock x:Name="TileRequests" Text="0" Style="{StaticResource TileValueTextStyle}" />
+                            <TextBlock x:Name="TileRequestsSub" Text="entradas + salidas" Style="{StaticResource TileSubTextStyle}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource TileStyle}" Grid.Column="3">
+                        <StackPanel>
+                            <TextBlock Text="Ocupación" Style="{StaticResource TileLabelTextStyle}" />
+                            <TextBlock x:Name="TilePct" Text="0%" Style="{StaticResource TileValueTextStyle}" />
+                            <TextBlock Text="nivel actual" Style="{StaticResource TileSubTextStyle}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Two cards row -->
+                <Grid ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Style="{StaticResource CardStyle}" Grid.Column="0">
+                        <StackPanel Padding="16">
+                            <TextBlock Text="Ocupación por zona" Style="{StaticResource CardTitleTextStyle}" />
+                            <StackPanel x:Name="ZonesPanel" Margin="0,10,0,0" Spacing="10" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}" Grid.Column="1">
+                        <StackPanel Padding="16">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Alertas recientes" Style="{StaticResource CardTitleTextStyle}" />
+                                <ContentPresenter x:Name="AlertsBadgeHost" Grid.Column="1" />
+                            </Grid>
+                            <StackPanel x:Name="AlertsPanel" Margin="0,8,0,0" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Gates summary -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Padding="16">
+                        <TextBlock Text="Estado de gates" Style="{StaticResource CardTitleTextStyle}" />
+                        <StackPanel x:Name="GatesPanel" Orientation="Horizontal" Spacing="8" Margin="0,10,0,0" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

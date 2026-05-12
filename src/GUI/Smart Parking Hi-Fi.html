@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Parking Lot</title>
+<style>
+/* ── WinUI 3 / Fluent Design Token System ─────────────────────────────────── */
+:root {
+  --accent:       #0891b2;
+  --accent-text:  #ffffff;
+  --accent-light: color-mix(in srgb, var(--accent) 15%, transparent);
+  --accent-hover: color-mix(in srgb, var(--accent) 85%, #fff);
+}
+
+/* Light theme — Windows 11 Mica */
+:root.light {
+  --bg:           #f3f3f3;
+  --mica:         rgba(243,243,243,0.7);
+  --layer0:       #f3f3f3;
+  --layer1:       #ffffff;
+  --layer2:       #f9f9f9;
+  --layer3:       #f3f3f3;
+  --sidebar-bg:   rgba(243,243,243,0.85);
+  --stroke:       rgba(0,0,0,0.0803);
+  --stroke2:      rgba(0,0,0,0.0541);
+  --tx1:          rgba(0,0,0,0.8956);
+  --tx2:          rgba(0,0,0,0.6063);
+  --tx3:          rgba(0,0,0,0.4458);
+  --fill-hover:   rgba(0,0,0,0.0373);
+  --fill-pressed: rgba(0,0,0,0.0241);
+  --fill-subtle:  rgba(0,0,0,0.0241);
+  --ctrl-bg:      rgba(255,255,255,0.7);
+  --ctrl-border:  rgba(0,0,0,0.0578);
+  --ctrl-hover:   rgba(249,249,249,1);
+  --success:      #0f7b0f;  --success-bg: rgba(15,123,15,0.1);
+  --warning:      #9d5d00;  --warning-bg: rgba(157,93,0,0.1);
+  --danger:       #c42b1c;  --danger-bg:  rgba(196,43,28,0.1);
+  --nav-width:    240px;
+}
+
+/* Dark theme — Windows 11 Dark */
+:root.dark {
+  --bg:           #202020;
+  --mica:         rgba(32,32,32,0.85);
+  --layer0:       #1c1c1c;
+  --layer1:       #2b2b2b;
+  --layer2:       #323232;
+  --layer3:       #3a3a3a;
+  --sidebar-bg:   rgba(28,28,28,0.9);
+  --stroke:       rgba(255,255,255,0.0837);
+  --stroke2:      rgba(255,255,255,0.0541);
+  --tx1:          rgba(255,255,255,0.8956);
+  --tx2:          rgba(255,255,255,0.6063);
+  --tx3:          rgba(255,255,255,0.4458);
+  --fill-hover:   rgba(255,255,255,0.0605);
+  --fill-pressed: rgba(255,255,255,0.0419);
+  --fill-subtle:  rgba(255,255,255,0.0373);
+  --ctrl-bg:      rgba(255,255,255,0.0605);
+  --ctrl-border:  rgba(255,255,255,0.0837);
+  --ctrl-hover:   rgba(255,255,255,0.0837);
+  --success:      #6ccb5f;  --success-bg: rgba(108,203,95,0.1);
+  --warning:      #fce100;  --warning-bg: rgba(252,225,0,0.1);
+  --danger:       #ff99a4;  --danger-bg:  rgba(255,153,164,0.1);
+  --nav-width:    240px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; }
+
+body {
+  font-family: 'Segoe UI Variable Text', 'Segoe UI', -apple-system, system-ui, sans-serif;
+  font-size: 12px;
+  background: var(--bg);
+  color: var(--tx1);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Window chrome ──────────────────────────────────────────────────────────── */
+.titlebar {
+  height: 32px;
+  background: var(--sidebar-bg);
+  backdrop-filter: blur(40px) saturate(1.8);
+  -webkit-backdrop-filter: blur(40px) saturate(1.8);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  flex-shrink: 0;
+  user-select: none;
+  position: relative;
+  border-bottom: 1px solid var(--stroke);
+  -webkit-app-region: drag;
+}
+.titlebar-icon {
+  width: 16px; height: 16px; margin-right: 8px; flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+.titlebar-title {
+  font-size: 12px; font-weight: 400; color: var(--tx2);
+  flex: 1; letter-spacing: 0.01em;
+}
+.titlebar-caption {
+  display: flex; -webkit-app-region: no-drag; margin-left: auto;
+}
+.caption-btn {
+  width: 46px; height: 32px; border: none; background: transparent;
+  color: var(--tx2); font-size: 10px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.1s;
+  font-family: 'Segoe MDL2 Assets', 'Segoe UI', sans-serif;
+}
+.caption-btn:hover { background: var(--fill-hover); color: var(--tx1); }
+.caption-btn.close:hover { background: #c42b1c; color: #fff; }
+
+/* ── App layout ─────────────────────────────────────────────────────────────── */
+.app-shell { display: flex; height: calc(100vh - 32px); overflow: hidden; }
+
+/* ── Navigation pane ────────────────────────────────────────────────────────── */
+.nav-pane {
+  width: var(--nav-width); flex-shrink: 0;
+  background: var(--sidebar-bg);
+  backdrop-filter: blur(40px) saturate(1.8);
+  -webkit-backdrop-filter: blur(40px) saturate(1.8);
+  display: flex; flex-direction: column;
+  border-right: 1px solid var(--stroke);
+  overflow: hidden;
+}
+.nav-header {
+  height: 48px; display: flex; align-items: center;
+  padding: 0 12px; gap: 10px;
+  border-bottom: 1px solid var(--stroke);
+}
+.nav-menu-btn {
+  width: 34px; height: 34px; border: none; background: transparent;
+  color: var(--tx2); cursor: pointer; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.1s; flex-shrink: 0;
+}
+.nav-menu-btn:hover { background: var(--fill-hover); }
+.nav-search {
+  flex: 1; height: 28px; background: var(--ctrl-bg);
+  border: 1px solid var(--ctrl-border); border-radius: 4px;
+  display: flex; align-items: center; padding: 0 8px; gap: 6px;
+  color: var(--tx3); font-size: 11px; cursor: text;
+}
+
+.nav-lot {
+  padding: 10px 12px; border-bottom: 1px solid var(--stroke2);
+}
+.nav-lot-label { font-size: 10px; font-weight: 600; color: var(--tx3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 3px; }
+.nav-lot-name  { font-size: 13px; font-weight: 600; color: var(--tx1); }
+.nav-lot-row   { display: flex; gap: 5px; margin-top: 4px; align-items: center; }
+
+.nav-items { flex: 1; overflow-y: auto; padding: 4px 0; }
+.nav-section-header {
+  font-size: 10px; font-weight: 600; color: var(--tx3);
+  letter-spacing: 0.07em; text-transform: uppercase;
+  padding: 8px 12px 2px;
+}
+.nav-item {
+  display: flex; align-items: center; height: 36px; padding: 0 12px;
+  gap: 12px; cursor: pointer; border-radius: 4px; margin: 1px 4px;
+  color: var(--tx2); font-size: 12px; font-weight: 400;
+  transition: background 0.1s, color 0.1s; user-select: none;
+  position: relative;
+}
+.nav-item:hover { background: var(--fill-hover); color: var(--tx1); }
+.nav-item.active {
+  background: var(--accent-light);
+  color: var(--tx1); font-weight: 600;
+}
+.nav-item.active::before {
+  content: ''; position: absolute; left: 0; top: 6px; bottom: 6px;
+  width: 3px; background: var(--accent); border-radius: 0 3px 3px 0;
+}
+.nav-item svg { flex-shrink: 0; opacity: 0.75; }
+.nav-item.active svg { opacity: 1; }
+.nav-item-badge {
+  margin-left: auto; font-size: 10px; font-weight: 700;
+  background: var(--danger); color: #fff; border-radius: 10px;
+  padding: 0 5px; min-width: 16px; text-align: center; line-height: 16px; height: 16px;
+}
+.nav-footer {
+  border-top: 1px solid var(--stroke); padding: 8px 4px;
+}
+.nav-settings-item {
+  display: flex; align-items: center; height: 36px; padding: 0 12px;
+  gap: 12px; cursor: pointer; border-radius: 4px; margin: 1px 0;
+  color: var(--tx2); font-size: 12px; transition: background 0.1s;
+}
+.nav-settings-item:hover { background: var(--fill-hover); color: var(--tx1); }
+
+/* ── Content area ───────────────────────────────────────────────────────────── */
+.content-area {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+  background: var(--bg); min-width: 0;
+}
+
+/* ── Content header (per-page) ──────────────────────────────────────────────── */
+.content-header {
+  height: 48px; padding: 0 20px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--stroke); background: var(--layer1);
+  flex-shrink: 0;
+}
+.content-title {
+  font-size: 15px; font-weight: 600; color: var(--tx1); flex: 1;
+  font-family: 'Segoe UI Variable Display', 'Segoe UI Semibold', 'Segoe UI', system-ui, sans-serif;
+}
+.content-subtitle { font-size: 11px; color: var(--tx3); margin-top: 1px; font-weight: 400; }
+
+/* ── Command bar ────────────────────────────────────────────────────────────── */
+.command-bar {
+  height: 40px; padding: 0 16px;
+  display: flex; align-items: center; gap: 2px;
+  border-bottom: 1px solid var(--stroke2); background: var(--layer1);
+  flex-shrink: 0;
+}
+.cmd-btn {
+  height: 28px; padding: 0 10px; border: none; border-radius: 4px;
+  background: transparent; color: var(--tx2); font-family: inherit;
+  font-size: 12px; cursor: pointer; display: inline-flex;
+  align-items: center; gap: 6px; transition: background 0.1s; white-space: nowrap;
+}
+.cmd-btn:hover { background: var(--fill-hover); color: var(--tx1); }
+.cmd-btn.primary {
+  background: var(--accent); color: var(--accent-text);
+  font-weight: 600;
+}
+.cmd-btn.primary:hover { background: var(--accent-hover); }
+.cmd-sep { width: 1px; height: 20px; background: var(--stroke); margin: 0 4px; }
+.cmd-spacer { flex: 1; }
+
+/* ── Scrollable page body ───────────────────────────────────────────────────── */
+.page { flex: 1; overflow: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.page.no-pad { padding: 0; }
+
+/* ── Status bar ─────────────────────────────────────────────────────────────── */
+.statusbar {
+  height: 22px; padding: 0 16px; display: flex; align-items: center; gap: 20px;
+  background: var(--layer0); border-top: 1px solid var(--stroke);
+  font-size: 11px; color: var(--tx3); flex-shrink: 0;
+}
+.statusbar-sep { width: 1px; height: 12px; background: var(--stroke); }
+.status-led {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--success); display: inline-block;
+}
+.status-led.err { background: var(--danger); }
+
+/* ── Cards ──────────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--layer1); border: 1px solid var(--stroke);
+  border-radius: 8px; overflow: hidden;
+}
+.card-header {
+  padding: 12px 16px 0; display: flex; align-items: center;
+  justify-content: space-between;
+}
+.card-title { font-size: 12px; font-weight: 600; color: var(--tx1); }
+.card-body  { padding: 12px 16px; }
+.card-footer {
+  padding: 8px 16px; border-top: 1px solid var(--stroke2);
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: var(--tx3);
+}
+
+/* ── Stat tiles ─────────────────────────────────────────────────────────────── */
+.tile-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+.tile {
+  background: var(--layer1); border: 1px solid var(--stroke);
+  border-radius: 8px; padding: 14px 16px;
+}
+.tile-label { font-size: 11px; font-weight: 400; color: var(--tx2); margin-bottom: 6px; }
+.tile-val   { font-size: 26px; font-weight: 600; color: var(--tx1); line-height: 1; margin-bottom: 4px;
+  font-family: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif; }
+.tile-sub   { font-size: 11px; color: var(--tx3); display: flex; align-items: center; gap: 4px; }
+.tile-trend { font-size: 11px; font-weight: 600; }
+.tile-trend.up   { color: var(--success); }
+.tile-trend.down { color: var(--danger); }
+.tile-icon {
+  float: right; margin: -2px -2px 0 0;
+  opacity: 0.4;
+}
+
+/* ── Tables ─────────────────────────────────────────────────────────────────── */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  padding: 0 14px; height: 32px; font-size: 11px; font-weight: 600;
+  color: var(--tx2); text-align: left; border-bottom: 1px solid var(--stroke);
+  background: var(--layer1); white-space: nowrap;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+tbody td {
+  padding: 0 14px; height: 38px; font-size: 12px; color: var(--tx2);
+  border-bottom: 1px solid var(--stroke2); vertical-align: middle;
+}
+tbody tr:hover td { background: var(--fill-hover); }
+tbody tr:last-child td { border-bottom: none; }
+td.tx1 { color: var(--tx1); font-weight: 500; }
+td.mono { font-family: 'Cascadia Code','Consolas','Menlo',monospace; font-size: 11px; }
+
+/* ── Controls ───────────────────────────────────────────────────────────────── */
+.fluent-input {
+  height: 28px; padding: 0 10px; background: var(--ctrl-bg);
+  border: 1px solid var(--ctrl-border); border-radius: 4px;
+  font-family: inherit; font-size: 12px; color: var(--tx1); outline: none;
+  transition: border-color 0.1s, box-shadow 0.1s;
+}
+.fluent-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.fluent-input::placeholder { color: var(--tx3); }
+.input-wrap { position: relative; display: inline-flex; align-items: center; }
+.input-wrap svg { position: absolute; left: 8px; color: var(--tx3); pointer-events: none; }
+.input-wrap .fluent-input { padding-left: 28px; }
+
+.fluent-select {
+  height: 28px; padding: 0 24px 0 10px; background: var(--ctrl-bg);
+  border: 1px solid var(--ctrl-border); border-radius: 4px;
+  font-family: inherit; font-size: 12px; color: var(--tx1); outline: none;
+  appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 7px center;
+}
+
+/* Toggle switch (WinUI style) */
+.toggle {
+  width: 38px; height: 20px; position: relative; cursor: pointer;
+  border: none; padding: 0; background: transparent;
+  display: inline-flex; align-items: center;
+}
+.toggle-track {
+  width: 38px; height: 20px; border-radius: 10px;
+  border: 1.5px solid var(--stroke);
+  background: var(--ctrl-bg); position: relative;
+  transition: background 0.15s, border-color 0.15s;
+}
+.toggle.on .toggle-track { background: var(--accent); border-color: var(--accent); }
+.toggle-knob {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--tx2); position: absolute; top: 2.5px; left: 2.5px;
+  transition: transform 0.15s, background 0.15s, width 0.1s;
+}
+.toggle.on .toggle-knob { transform: translateX(18px); background: var(--accent-text); }
+
+/* Segmented control (mode toggle) */
+.seg-ctrl {
+  display: inline-flex; border: 1px solid var(--ctrl-border);
+  border-radius: 4px; overflow: hidden; height: 26px;
+}
+.seg-opt {
+  padding: 0 10px; font-size: 11px; font-weight: 600; cursor: pointer;
+  background: transparent; color: var(--tx3); border: none;
+  font-family: inherit; transition: background 0.1s, color 0.1s;
+  display: flex; align-items: center;
+}
+.seg-opt:hover { background: var(--fill-hover); color: var(--tx2); }
+.seg-opt.active.auto   { background: var(--accent); color: var(--accent-text); }
+.seg-opt.active.manual { background: var(--warning-bg); color: var(--warning); }
+
+/* ── Badges ─────────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 1px 7px; border-radius: 3px; font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.badge-s { background: var(--success-bg); color: var(--success); }
+.badge-w { background: var(--warning-bg); color: var(--warning); }
+.badge-d { background: var(--danger-bg);  color: var(--danger); }
+.badge-n { background: var(--fill-subtle); color: var(--tx3); }
+.badge-a { background: var(--accent-light); color: var(--accent); }
+
+/* ── Progress ────────────────────────────────────────────────────────────────── */
+.progress {
+  height: 2px; background: var(--stroke); border-radius: 1px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 1px; background: var(--accent);
+  transition: width 0.4s;
+}
+.progress-fill.s { background: var(--success); }
+.progress-fill.w { background: var(--warning); }
+.progress-fill.d { background: var(--danger); }
+
+/* ── InfoBar ─────────────────────────────────────────────────────────────────── */
+.infobar {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  border-radius: 4px; border: 1px solid; font-size: 12px; font-weight: 500;
+  margin-bottom: 4px;
+}
+.infobar.warn { background: var(--warning-bg); border-color: color-mix(in srgb, var(--warning) 30%, transparent); color: var(--warning); }
+.infobar.info { background: var(--accent-light); border-color: color-mix(in srgb, var(--accent) 30%, transparent); color: var(--accent); }
+
+/* ── Parking map ─────────────────────────────────────────────────────────────── */
+.map-shell { display: flex; gap: 12px; flex: 1; min-height: 0; padding: 12px 16px; overflow: hidden; }
+.map-canvas-wrap { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+.map-right-pane  { width: 228px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+
+.map-card {
+  background: var(--layer1); border: 1px solid var(--stroke);
+  border-radius: 8px; padding: 14px;
+}
+.zone-row { margin-bottom: 8px; }
+.zone-hd {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--tx3); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;
+}
+.zone-hd::after { content:''; flex:1; height:1px; background: var(--stroke2); }
+.spots-row { display: flex; gap: 4px; flex-wrap: wrap; }
+
+.spot {
+  width: 44px; height: 54px; border-radius: 5px;
+  border: 1px solid var(--stroke); background: var(--layer2);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; cursor: pointer; position: relative; user-select: none;
+  transition: border-color 0.1s, background 0.1s;
+}
+.spot:hover { border-color: var(--accent); background: var(--layer3); }
+.spot.occupied {
+  background: color-mix(in srgb, var(--accent) 12%, var(--layer1));
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.spot.reserved {
+  background: var(--warning-bg); border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+  border-style: dashed;
+}
+.spot.changed { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-light); }
+.spot-id   { font-size: 9px; font-weight: 700; color: var(--tx1); font-family: 'Cascadia Code','Consolas',monospace; }
+.spot-type { font-size: 8px; color: var(--tx3); }
+.spot-led  { position: absolute; top: 3px; right: 3px; width: 4px; height: 4px; border-radius: 50%; background: var(--fill-subtle); }
+.spot-led.free { background: var(--success); opacity: 0.7; }
+.spot-led.occ  { background: var(--accent); animation: led-pulse 1.5s infinite; }
+.spot-led.res  { background: var(--warning); }
+@keyframes led-pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* Aisle */
+.aisle {
+  height: 14px; margin: 2px 0; display: flex; align-items: center; gap: 6px;
+  color: var(--tx3); font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.aisle::before, .aisle::after {
+  content:''; flex:1; height:1px;
+  background: repeating-linear-gradient(90deg, var(--stroke2) 0, var(--stroke2) 4px, transparent 4px, transparent 8px);
+}
+
+/* Gate strip */
+.gate-strip {
+  display: flex; gap: 6px; align-items: center; padding: 6px 0;
+}
+.gate-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 24px; padding: 0 10px; border-radius: 12px;
+  border: 1px solid var(--stroke); background: var(--layer2);
+  font-size: 10px; font-weight: 600; color: var(--tx2);
+  cursor: pointer; transition: all 0.1s; user-select: none;
+}
+.gate-pill:hover { border-color: var(--accent); color: var(--tx1); }
+.gate-pill.manual { border-color: color-mix(in srgb, var(--warning) 50%, transparent); background: var(--warning-bg); color: var(--warning); }
+.gate-pill.open   { border-color: color-mix(in srgb, var(--success) 50%, transparent); background: var(--success-bg); color: var(--success); }
+.gate-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.7; }
+.gate-dot.open { animation: led-pulse 1s infinite; opacity: 1; }
+.gate-label { font-size: 9px; color: var(--tx3); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* Gate control panel */
+.gate-ctrl-title { font-size: 11px; font-weight: 600; color: var(--tx1); margin-bottom: 8px; }
+.gate-block { padding: 8px 0; border-bottom: 1px solid var(--stroke2); }
+.gate-block:last-child { border-bottom: none; padding-bottom: 0; }
+.gate-block-name { font-size: 11px; font-weight: 600; color: var(--tx1); }
+.gate-block-sub  { font-size: 10px; color: var(--tx3); margin-bottom: 6px; }
+.gate-mode-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.gate-action-row { display: flex; gap: 5px; }
+
+/* Serial */
+.serial {
+  font-family: 'Cascadia Code','Consolas','Menlo',monospace; font-size: 11px;
+  background: var(--layer0); border: 1px solid var(--stroke); border-radius: 4px;
+  padding: 10px; line-height: 1.75; overflow-y: auto; max-height: 160px; color: var(--tx2);
+}
+.s-ts  { color: var(--tx3); }
+.s-key { color: var(--accent); }
+.s-val { color: var(--success); }
+.s-wrn { color: var(--warning); }
+
+/* Event type chips */
+.ev {
+  display: inline-flex; align-items: center; height: 16px; padding: 0 6px;
+  border-radius: 2px; font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ev-entry  { background: var(--success-bg); color: var(--success); }
+.ev-exit   { background: var(--danger-bg);  color: var(--danger); }
+.ev-gate   { background: var(--accent-light); color: var(--accent); }
+.ev-alert  { background: var(--warning-bg); color: var(--warning); }
+.ev-sensor { background: var(--fill-subtle); color: var(--tx2); }
+
+/* Tweaks */
+.tweaks-flyout {
+  position: fixed; bottom: 30px; right: 16px; z-index: 9999;
+  background: var(--layer1); border: 1px solid var(--stroke);
+  border-radius: 8px; padding: 14px; width: 200px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  display: none; flex-direction: column; gap: 12px;
+}
+.tweaks-flyout.open { display: flex; }
+.tweaks-hd { font-size: 13px; font-weight: 600; color: var(--tx1); margin-bottom: 2px; }
+.tweaks-section-label { font-size: 10px; font-weight: 600; color: var(--tx3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
+.color-row { display: flex; gap: 5px; flex-wrap: wrap; }
+.color-dot { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border-color 0.1s; }
+.color-dot.sel { border-color: var(--tx1); }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; }
+.toggle-label { font-size: 12px; color: var(--tx2); }
+
+/* Misc */
+.row  { display: flex; align-items: center; gap: 6px; }
+.col  { display: flex; flex-direction: column; gap: 4px; }
+.sep  { height: 1px; background: var(--stroke2); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.muted { color: var(--tx3); }
+
+/* Scrollbar (dark) */
+* { scrollbar-width: thin; scrollbar-color: var(--stroke) transparent; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--stroke); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "dark": false,
+  "accent": "#d97706"
+}/*EDITMODE-END*/;
+</script>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+// ── Icons ────────────────────────────────────────────────────────────────────
+const I = ({ n, s=14, c='currentColor' }) => {
+  const d = {
+    grid:    <><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></>,
+    map:     <><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></>,
+    list:    <><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></>,
+    db:      <><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></>,
+    cpu:     <><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/></>,
+    settings:<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></>,
+    alert:   <><path d="m10.29 3.86-8.6 14.9A1 1 0 0 0 2.55 20h18.9a1 1 0 0 0 .86-1.51L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></>,
+    check:   <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>,
+    x:       <><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></>,
+    refresh: <><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></>,
+    plus:    <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
+    search:  <><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>,
+    download:<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>,
+    parking: <><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/></>,
+    door:    <><path d="M18 20V6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v14"/><path d="M2 20h20"/><path d="M14 12v.01"/></>,
+    wifi:    <><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor"/></>,
+    user:    <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
+    clock:   <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>,
+    edit:    <><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></>,
+    trash:   <><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></>,
+    menu:    <><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>,
+    sliders: <><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></>,
+  };
+  return <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">{d[n]}</svg>;
+};
+
+// ── Domain data ───────────────────────────────────────────────────────────────
+const SPOTS_INIT = [
+  {id:'A-01',address:'Zona A, P. 1',type:'Estándar',   floor:'P1',isOccupied:true},
+  {id:'A-02',address:'Zona A, P. 2',type:'Estándar',   floor:'P1',isOccupied:false},
+  {id:'A-03',address:'Zona A, P. 3',type:'Estándar',   floor:'P1',isOccupied:true},
+  {id:'A-04',address:'Zona A, P. 4',type:'Estándar',   floor:'P1',isOccupied:true},
+  {id:'A-05',address:'Zona A, P. 5',type:'PMR',        floor:'P1',isOccupied:false},
+  {id:'A-06',address:'Zona A, P. 6',type:'Estándar',   floor:'P1',isOccupied:false},
+  {id:'B-01',address:'Zona B, P. 1',type:'Estándar',   floor:'P1',isOccupied:false},
+  {id:'B-02',address:'Zona B, P. 2',type:'Estándar',   floor:'P1',isOccupied:true},
+  {id:'B-03',address:'Zona B, P. 3',type:'Estándar',   floor:'P1',isOccupied:false,reserved:true},
+  {id:'B-04',address:'Zona B, P. 4',type:'Estándar',   floor:'P1',isOccupied:true},
+  {id:'B-05',address:'Zona B, P. 5',type:'Moto',       floor:'P1',isOccupied:false},
+  {id:'B-06',address:'Zona B, P. 6',type:'Moto',       floor:'P1',isOccupied:false},
+  {id:'C-01',address:'Zona C, P. 1',type:'Estándar',   floor:'P1',isOccupied:true},
+  {id:'C-02',address:'Zona C, P. 2',type:'Estándar',   floor:'P1',isOccupied:true},
+  {id:'C-03',address:'Zona C, P. 3',type:'Estándar',   floor:'P1',isOccupied:false},
+  {id:'C-04',address:'Zona C, P. 4',type:'Estándar',   floor:'P1',isOccupied:false},
+  {id:'C-05',address:'Zona C, P. 5',type:'Estándar',   floor:'P1',isOccupied:true},
+  {id:'C-06',address:'Zona C, P. 6',type:'Estándar',   floor:'P1',isOccupied:false},
+];
+const GATES_INIT = [
+  {id:'G-01',name:'Gate 01',type:'ENTRY',mode:'AUTOMATIC',isOpen:false},
+  {id:'G-02',name:'Gate 02',type:'EXIT', mode:'AUTOMATIC',isOpen:false},
+  {id:'G-03',name:'Gate 03',type:'ENTRY',mode:'MANUAL',   isOpen:true},
+];
+const LOG_INIT = [
+  {id:'r001',ts:'09:42:11',type:'entry', plate:'ABC-123',event:'Vehículo entró por Gate 01',spot:'A-03'},
+  {id:'r002',ts:'09:38:55',type:'gate',  plate:'—',      event:'Gate 03 cambiado a MANUAL',  spot:'—'},
+  {id:'r003',ts:'09:35:02',type:'exit',  plate:'XYZ-789',event:'Vehículo salió por Gate 02',  spot:'B-04'},
+  {id:'r004',ts:'09:31:18',type:'alert', plate:'—',      event:'Sensor B-02 sin señal',       spot:'B-02'},
+  {id:'r005',ts:'09:28:44',type:'entry', plate:'DEF-456',event:'Vehículo entró por Gate 03',  spot:'C-01'},
+  {id:'r006',ts:'09:21:09',type:'exit',  plate:'GHI-321',event:'Vehículo salió por Gate 01',  spot:'A-01'},
+  {id:'r007',ts:'09:15:33',type:'alert', plate:'—',      event:'Capacidad al 80%',             spot:'—'},
+  {id:'r008',ts:'09:10:07',type:'gate',  plate:'—',      event:'Gate 01 abierta manualmente',  spot:'—'},
+  {id:'r009',ts:'09:05:22',type:'sensor',plate:'—',      event:'Lectura: A-03 → OCUPADO',      spot:'A-03'},
+  {id:'r010',ts:'09:00:00',type:'entry', plate:'JKL-654',event:'Sistema iniciado',              spot:'—'},
+];
+const ZONES = ['A','B','C'];
+
+// ── Screens ───────────────────────────────────────────────────────────────────
+function PageDashboard({spots, gates}) {
+  const occ = spots.filter(s=>s.isOccupied).length;
+  const tot = spots.length;
+  const pct = Math.round(occ/tot*100);
+  const pctCls = pct>=90?'d':pct>=70?'w':'s';
+  return (
+    <div className="page">
+      {/* Tiles */}
+      <div className="tile-grid">
+        {[
+          {label:'Spots ocupados', val:occ,   sub:`de ${tot} totales`},
+          {label:'Disponibles',    val:tot-occ,sub:'1 reservado'},
+          {label:'Vehículos hoy',  val:47,    sub:'+12% vs ayer', trend:'+12%', up:true},
+          {label:'Ocupación',      val:`${pct}%`, sub:'nivel actual'},
+        ].map(t=>(
+          <div key={t.label} className="tile">
+            <div className="tile-label">{t.label}</div>
+            <div className="tile-val">{t.val}</div>
+            <div className="tile-sub">
+              <span>{t.sub}</span>
+              {t.trend && <span className={`tile-trend ${t.up?'up':'down'}`}>{t.trend}</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid2">
+        {/* Occupancy */}
+        <div className="card">
+          <div className="card-header"><span className="card-title">Ocupación por zona</span></div>
+          <div className="card-body" style={{paddingTop:10}}>
+            {ZONES.map(z=>{
+              const zs=spots.filter(s=>s.id.startsWith(z));
+              const zo=zs.filter(s=>s.isOccupied).length;
+              const zp=Math.round(zo/zs.length*100);
+              const cls=zp>=90?'d':zp>=70?'w':'s';
+              return (
+                <div key={z} style={{marginBottom:10}}>
+                  <div className="row" style={{marginBottom:4,justifyContent:'space-between'}}>
+                    <span style={{fontSize:12,fontWeight:500,color:'var(--tx2)'}}>Zona {z}</span>
+                    <span style={{fontSize:12,fontWeight:600,color:'var(--tx1)'}}>{zo}/{zs.length}</span>
+                  </div>
+                  <div className="progress"><div className={`progress-fill ${cls}`} style={{width:`${zp}%`}}/></div>
+                </div>
+              );
+            })}
+            <div style={{paddingTop:8,borderTop:'1px solid var(--stroke2)',marginTop:4}}>
+              <div className="row" style={{marginBottom:4,justifyContent:'space-between'}}>
+                <span style={{fontSize:12,fontWeight:600,color:'var(--tx1)'}}>Total</span>
+                <span style={{fontSize:12,fontWeight:600,color:'var(--tx1)'}}>{pct}%</span>
+              </div>
+              <div className="progress" style={{height:3}}>
+                <div className={`progress-fill ${pctCls}`} style={{width:`${pct}%`}}/>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Alerts */}
+        <div className="card">
+          <div className="card-header">
+            <span className="card-title">Alertas recientes</span>
+            <span className="badge badge-w">2 activas</span>
+          </div>
+          <div className="card-body" style={{paddingTop:10}}>
+            {[
+              {kind:'d', msg:'Sensor B-02 sin señal',       time:'hace 11 min'},
+              {kind:'w', msg:'Capacidad al 80%',             time:'hace 18 min'},
+              {kind:'s', msg:'Gate 03 restaurada',           time:'hace 22 min'},
+              {kind:'s', msg:'Arduino conectado',            time:'09:00:12'},
+            ].map((a,i)=>(
+              <div key={i} className="row" style={{padding:'7px 0',borderBottom:'1px solid var(--stroke2)',gap:10}}>
+                <div style={{width:24,height:24,borderRadius:4,display:'flex',alignItems:'center',justifyContent:'center',background:a.kind==='d'?'var(--danger-bg)':a.kind==='w'?'var(--warning-bg)':'var(--success-bg)',color:a.kind==='d'?'var(--danger)':a.kind==='w'?'var(--warning)':'var(--success)',flexShrink:0}}>
+                  <I n={a.kind==='s'?'check':a.kind==='w'?'alert':'x'} s={12}/>
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:12,fontWeight:500,color:'var(--tx1)'}}>{a.msg}</div>
+                  <div style={{fontSize:10,color:'var(--tx3)',marginTop:1}}>{a.time}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Gates summary */}
+      <div className="card">
+        <div className="card-header"><span className="card-title">Estado de gates</span></div>
+        <div className="card-body" style={{paddingTop:12}}>
+          <div style={{display:'flex',gap:8}}>
+            {gates.map(g=>(
+              <div key={g.id} style={{flex:1,padding:'10px 12px',background:'var(--layer2)',borderRadius:6,border:'1px solid var(--stroke2)'}}>
+                <div className="row" style={{marginBottom:6,justifyContent:'space-between'}}>
+                  <span style={{fontSize:12,fontWeight:600,color:'var(--tx1)'}}>{g.name}</span>
+                  <span className={`badge ${g.isOpen?'badge-s':'badge-n'}`}>{g.isOpen?'Abierta':'Cerrada'}</span>
+                </div>
+                <div className="row" style={{gap:4}}>
+                  <span className={`badge ${g.type==='ENTRY'?'badge-a':'badge-n'}`}>{g.type}</span>
+                  <span className={`badge ${g.mode==='MANUAL'?'badge-w':'badge-n'}`}>{g.mode}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PageMap({spots, setSpots, gates, setGates}) {
+  const [changed, setChanged] = useState(null);
+  const toggle = id => {
+    setSpots(p=>p.map(s=>s.id===id?{...s,isOccupied:!s.isOccupied}:s));
+    setChanged(id); setTimeout(()=>setChanged(null),1800);
+  };
+  const setMode = (id, mode) => setGates(p=>p.map(g=>g.id===id?{...g,mode,isOpen:false}:g));
+  const toggleOpen = id => setGates(p=>p.map(g=>g.id===id?{...g,isOpen:!g.isOpen}:g));
+  const manualMode = gates.some(g=>g.mode==='MANUAL');
+
+  return (
+    <div className="map-shell">
+      {/* Canvas */}
+      <div className="map-canvas-wrap">
+        {manualMode && (
+          <div className="infobar warn">
+            <I n="sliders" s={12}/>
+            <span>Modo manual activo en una o más gates — el sistema no abre automáticamente</span>
+          </div>
+        )}
+        <div className="map-card">
+          <div className="row" style={{marginBottom:12,justifyContent:'space-between'}}>
+            <div>
+              <span style={{fontSize:13,fontWeight:600,color:'var(--tx1)'}}>Planta 1 — Central Norte</span>
+              <span style={{fontSize:11,color:'var(--tx3)',marginLeft:10}}>
+                {spots.filter(s=>s.isOccupied).length}/{spots.length} ocupados
+              </span>
+            </div>
+            <div className="row" style={{gap:12}}>
+              {[['Libre','free'],['Ocupado','occ'],['Reservado','res']].map(([l,c])=>(
+                <div key={l} className="row" style={{gap:5,fontSize:10,color:'var(--tx3)',fontWeight:500}}>
+                  <div style={{width:10,height:10,borderRadius:2,
+                    background:c==='occ'?'color-mix(in srgb, var(--accent) 20%, var(--layer1))':c==='res'?'var(--warning-bg)':'var(--layer2)',
+                    border:'1px solid',borderColor:c==='occ'?'color-mix(in srgb, var(--accent) 40%, transparent)':c==='res'?'color-mix(in srgb, var(--warning) 40%, transparent)':'var(--stroke)'}}/>
+                  {l}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Entry gates */}
+          <div className="gate-strip" style={{borderBottom:'1px solid var(--stroke2)',paddingBottom:8,marginBottom:8}}>
+            <span className="gate-label">Entradas</span>
+            {gates.filter(g=>g.type==='ENTRY').map(g=>(
+              <div key={g.id} className={`gate-pill ${g.mode==='MANUAL'?'manual':''} ${g.isOpen&&g.mode==='MANUAL'?'open':''}`}>
+                <div className={`gate-dot ${g.isOpen&&g.mode==='MANUAL'?'open':''}`}/>
+                <I n="door" s={9}/>{g.name}
+                <span style={{fontSize:9,opacity:0.7}}>{g.mode==='MANUAL'?'MANUAL':'AUTO'}</span>
+              </div>
+            ))}
+          </div>
+
+          {ZONES.map((z,zi)=>(
+            <div key={z}>
+              <div className="zone-row">
+                <div className="zone-hd">Zona {z}</div>
+                <div className="spots-row">
+                  {spots.filter(s=>s.id.startsWith(z)).map(s=>(
+                    <div key={s.id}
+                      className={`spot ${s.isOccupied?'occupied':''} ${s.reserved?'reserved':''} ${s.id===changed?'changed':''}`}
+                      onClick={()=>toggle(s.id)}
+                      title={`${s.id} — ${s.address} (${s.type})`}>
+                      <div className="spot-id">{s.id}</div>
+                      <div className="spot-type">{s.type==='Estándar'?'STD':s.type==='PMR'?'PMR':'MOTO'}</div>
+                      <div className={`spot-led ${s.reserved?'res':s.isOccupied?'occ':'free'}`}/>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {zi<ZONES.length-1 && <div className="aisle">Pasillo</div>}
+            </div>
+          ))}
+
+          {/* Exit gates */}
+          <div className="gate-strip" style={{borderTop:'1px solid var(--stroke2)',paddingTop:8,marginTop:8}}>
+            <span className="gate-label">Salidas</span>
+            {gates.filter(g=>g.type==='EXIT').map(g=>(
+              <div key={g.id} className={`gate-pill ${g.mode==='MANUAL'?'manual':''} ${g.isOpen&&g.mode==='MANUAL'?'open':''}`}>
+                <div className={`gate-dot ${g.isOpen&&g.mode==='MANUAL'?'open':''}`}/>
+                <I n="door" s={9}/>{g.name}
+                <span style={{fontSize:9,opacity:0.7}}>{g.mode==='MANUAL'?'MANUAL':'AUTO'}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{marginTop:8,fontSize:10,color:'var(--tx3)'}}>
+            Click en un spot para cambiar estado · ParkingMode: {manualMode?'MANUAL':'AUTOMATIC'}
+          </div>
+        </div>
+      </div>
+
+      {/* Right pane */}
+      <div className="map-right-pane">
+        <div className="map-card">
+          <div className="gate-ctrl-title">Control de Gates</div>
+          {gates.map(g=>(
+            <div key={g.id} className="gate-block">
+              <div className="row" style={{marginBottom:2,justifyContent:'space-between'}}>
+                <div className="gate-block-name">{g.name}</div>
+                <span className={`badge ${g.isOpen?'badge-s':'badge-n'}`}>{g.isOpen?'Abierta':'Cerrada'}</span>
+              </div>
+              <div className="gate-block-sub">
+                <span className={`badge ${g.type==='ENTRY'?'badge-a':'badge-n'}`}>{g.type}</span>
+              </div>
+              <div className="gate-mode-row">
+                <div className="seg-ctrl" style={{flex:1}}>
+                  <button className={`seg-opt auto ${g.mode==='AUTOMATIC'?'active':''}`} onClick={()=>setMode(g.id,'AUTOMATIC')}>AUTO</button>
+                  <button className={`seg-opt manual ${g.mode==='MANUAL'?'active':''}`} onClick={()=>setMode(g.id,'MANUAL')}>MANUAL</button>
+                </div>
+              </div>
+              {g.mode==='MANUAL' ? (
+                <div className="gate-action-row">
+                  <button className="cmd-btn" style={{flex:1,justifyContent:'center',background:g.isOpen?'var(--danger-bg)':'var(--success-bg)',color:g.isOpen?'var(--danger)':'var(--success)',borderRadius:4}} onClick={()=>toggleOpen(g.id)}>
+                    {g.isOpen?<><I n="x" s={11}/>Cerrar</>:<><I n="check" s={11}/>Abrir</>}
+                  </button>
+                </div>
+              ) : (
+                <div style={{fontSize:10,color:'var(--tx3)',fontStyle:'italic'}}>Control automático</div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Spot summary */}
+        <div className="map-card">
+          <div style={{fontSize:11,fontWeight:600,color:'var(--tx1)',marginBottom:8}}>Resumen</div>
+          {[
+            {l:'Libres',    v:spots.filter(s=>!s.isOccupied&&!s.reserved).length, b:'badge-s'},
+            {l:'Ocupados',  v:spots.filter(s=>s.isOccupied).length, b:'badge-a'},
+            {l:'Reservados',v:spots.filter(s=>s.reserved).length, b:'badge-w'},
+          ].map(r=>(
+            <div key={r.l} className="row" style={{justifyContent:'space-between',padding:'5px 0',borderBottom:'1px solid var(--stroke2)'}}>
+              <span style={{fontSize:11,color:'var(--tx2)'}}>{r.l}</span>
+              <span className={`badge ${r.b}`}>{r.v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PageLog() {
+  const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const typeLabel = {entry:'Entrada',exit:'Salida',gate:'Gate',alert:'Alerta',sensor:'Sensor'};
+  const items = LOG_INIT.filter(r=>{
+    if(filter!=='all'&&r.type!==filter) return false;
+    if(search&&!r.event.toLowerCase().includes(search.toLowerCase())&&!r.plate.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+  return (
+    <div className="page" style={{gap:10}}>
+      <div className="row">
+        <div className="input-wrap">
+          <I n="search" s={12}/>
+          <input className="fluent-input" placeholder="Buscar placa, evento..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:220}}/>
+        </div>
+        <div className="row" style={{gap:2}}>
+          {['all','entry','exit','gate','alert','sensor'].map(t=>(
+            <button key={t} className="cmd-btn" style={{background:filter===t?'var(--accent-light)':undefined, color:filter===t?'var(--accent)':undefined, borderRadius:4}}
+              onClick={()=>setFilter(t)}>
+              {t==='all'?'Todos':typeLabel[t]}
+            </button>
+          ))}
+        </div>
+        <div style={{flex:1}}/>
+        <button className="cmd-btn"><I n="download" s={11}/>Exportar</button>
+        <button className="cmd-btn"><I n="refresh" s={11}/>Actualizar</button>
+      </div>
+      <div className="card">
+        <div className="tbl-wrap">
+          <table>
+            <thead><tr><th>Hora</th><th>Tipo</th><th>Placa</th><th>Evento</th><th>Spot</th></tr></thead>
+            <tbody>
+              {items.map(r=>(
+                <tr key={r.id}>
+                  <td className="mono">{r.ts}</td>
+                  <td><span className={`ev ev-${r.type}`}>{typeLabel[r.type]}</span></td>
+                  <td className="tx1 mono">{r.plate}</td>
+                  <td>{r.event}</td>
+                  <td className="mono muted">{r.spot}</td>
+                </tr>
+              ))}
+              {items.length===0 && <tr><td colSpan={5} style={{padding:24,textAlign:'center',color:'var(--tx3)'}}>Sin resultados</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <div className="card-footer">{items.length} eventos mostrados</div>
+      </div>
+    </div>
+  );
+}
+
+function PageAdmin({spots, setSpots}) {
+  const [search, setSearch] = useState('');
+  const items = spots.filter(s=>!search||s.id.toLowerCase().includes(search.toLowerCase())||s.type.toLowerCase().includes(search.toLowerCase()));
+  return (
+    <div className="page" style={{gap:10}}>
+      <div className="row">
+        <div className="input-wrap">
+          <I n="search" s={12}/>
+          <input className="fluent-input" placeholder="Buscar por ID, tipo..." value={search} onChange={e=>setSearch(e.target.value)} style={{width:220}}/>
+        </div>
+        <select className="fluent-select"><option>Todos los tipos</option><option>Estándar</option><option>PMR</option><option>Moto</option></select>
+        <div style={{flex:1}}/>
+        <button className="cmd-btn primary"><I n="plus" s={11}/>Agregar spot</button>
+        <button className="cmd-btn"><I n="download" s={11}/>Exportar</button>
+      </div>
+      <div className="card">
+        <div className="tbl-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Dirección</th><th>Tipo</th><th>Piso</th><th>Estado</th><th>Sensor</th><th>Acciones</th></tr></thead>
+            <tbody>
+              {items.map(s=>(
+                <tr key={s.id}>
+                  <td className="tx1 mono">{s.id}</td>
+                  <td>{s.address}</td>
+                  <td><span className={`badge ${s.type==='PMR'?'badge-w':'badge-n'}`}>{s.type}</span></td>
+                  <td className="muted">{s.floor}</td>
+                  <td><span className={`badge ${s.reserved?'badge-w':s.isOccupied?'badge-a':'badge-s'}`}>{s.reserved?'Reservado':s.isOccupied?'Ocupado':'Libre'}</span></td>
+                  <td><span className={`badge ${s.isOccupied?'badge-a':'badge-n'}`}>{s.isOccupied?'DETEC':'—'}</span></td>
+                  <td>
+                    <div className="row" style={{gap:4}}>
+                      <button className="cmd-btn" style={{borderRadius:4,padding:'0 8px'}}><I n="edit" s={11}/></button>
+                      <button className="cmd-btn" style={{borderRadius:4,padding:'0 8px',color:'var(--danger)'}}><I n="trash" s={11}/></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="card-footer">{items.length} / {spots.length} spots</div>
+      </div>
+    </div>
+  );
+}
+
+function PageArduino() {
+  const [conn, setConn] = useState(true);
+  return (
+    <div className="page">
+      <div className="grid2">
+        <div className="card">
+          <div className="card-header">
+            <span className="card-title">Conexión — IArduinoReader</span>
+            <span className={`badge ${conn?'badge-s':'badge-d'}`}>{conn?'Conectado':'Desconectado'}</span>
+          </div>
+          <div className="card-body" style={{paddingTop:12}}>
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              {[['Puerto serial','COM3'],['Baud rate','9600'],['Timeout (ms)','500']].map(([l,v])=>(
+                <div key={l} style={{display:'flex',flexDirection:'column',gap:3}}>
+                  <label style={{fontSize:10,fontWeight:600,color:'var(--tx3)',textTransform:'uppercase',letterSpacing:'0.06em'}}>{l}</label>
+                  <input className="fluent-input" defaultValue={v} style={{width:'100%'}}/>
+                </div>
+              ))}
+              <div className="row" style={{marginTop:4}}>
+                <button className={`cmd-btn ${conn?'':'primary'}`} style={{borderRadius:4,background:conn?'var(--danger-bg)':undefined,color:conn?'var(--danger)':undefined}} onClick={()=>setConn(c=>!c)}>
+                  {conn?<><I n="x" s={11}/>Desconectar</>:<><I n="wifi" s={11}/>Conectar</>}
+                </button>
+                <button className="cmd-btn" style={{borderRadius:4}}><I n="refresh" s={11}/>Escanear</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-header">
+            <span className="card-title">Lecturas en vivo</span>
+            <span style={{fontSize:10,color:'var(--tx3)'}}>~4/s</span>
+          </div>
+          <div className="card-body" style={{paddingTop:10}}>
+            <table style={{width:'100%',borderCollapse:'collapse'}}>
+              <thead>
+                <tr>{['Sensor','Spot','Val','Estado'].map(h=><th key={h} style={{textAlign:'left',padding:'3px 8px',fontSize:10,fontWeight:600,color:'var(--tx3)',borderBottom:'1px solid var(--stroke)',textTransform:'uppercase',letterSpacing:'0.05em'}}>{h}</th>)}</tr>
+              </thead>
+              <tbody>
+                {SPOTS_INIT.slice(0,6).map((s,i)=>(
+                  <tr key={s.id} style={{borderBottom:'1px solid var(--stroke2)'}}>
+                    <td style={{padding:'5px 8px',fontSize:11,fontFamily:'monospace',color:'var(--tx3)'}}>S-{String(i+1).padStart(2,'0')}</td>
+                    <td style={{padding:'5px 8px',fontSize:11,fontFamily:'monospace',fontWeight:600,color:'var(--tx1)'}}>{s.id}</td>
+                    <td style={{padding:'5px 8px',fontSize:11,fontFamily:'monospace',color:s.isOccupied?'var(--accent)':'var(--success)'}}>{s.isOccupied?'1':'0'}</td>
+                    <td style={{padding:'5px 8px'}}><span className={`badge ${s.isOccupied?'badge-a':'badge-s'}`}>{s.isOccupied?'OCUP':'LIBRE'}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid2">
+        <div className="card">
+          <div className="card-header">
+            <span className="card-title">Log serial</span>
+            <button className="cmd-btn" style={{fontSize:10}}><I n="refresh" s={10}/>Limpiar</button>
+          </div>
+          <div className="card-body">
+            <div className="serial">
+              {[
+                ['09:42:15','READ ','A-01=0 A-02=0 A-03=1 A-04=1'],
+                ['09:42:13','READ ','B-01=0 B-02=1 B-03=0 B-04=1'],
+                ['09:42:11','GATE ','G-01 OPENED'],
+                ['09:42:09','HEARTBEAT ','OK — latency 12ms'],
+              ].map(([t,k,v],i)=>(
+                <div key={i}><span className="s-ts">[{t}] </span><span className="s-key">{k}</span><span className="s-val">{v}</span></div>
+              ))}
+              <div><span className="s-ts">[09:42:07] </span><span className="s-key">EVENT </span><span className="s-wrn">SpotOccupancyChanged — A-03</span></div>
+              <div><span className="s-ts">[09:42:05] </span><span className="s-key">ALERT </span><span className="s-wrn">capacity=80% — AlertService notified</span></div>
+            </div>
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-header"><span className="card-title">Acciones de dispositivos</span></div>
+          <div className="card-body" style={{paddingTop:10}}>
+            {[
+              {d:'GATE G-01',a:'OPEN',  t:'09:42:11',ok:true},
+              {d:'LED A-03', a:'ON',    t:'09:42:07',ok:true},
+              {d:'GATE G-03',a:'MANUAL',t:'09:38:55',ok:true},
+              {d:'LED B-02', a:'BLINK', t:'09:31:18',ok:false},
+              {d:'GATE G-02',a:'CLOSE', t:'09:35:02',ok:true},
+            ].map((a,i)=>(
+              <div key={i} className="row" style={{padding:'5px 0',borderBottom:'1px solid var(--stroke2)',gap:8}}>
+                <span className="mono muted" style={{width:55,flexShrink:0}}>{a.t}</span>
+                <span style={{fontSize:11,fontWeight:600,color:'var(--tx1)',flex:1}}>{a.d}</span>
+                <span className="badge badge-n">{a.a}</span>
+                <span className={`badge ${a.ok?'badge-s':'badge-d'}`}>{a.ok?'OK':'ERR'}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Nav ───────────────────────────────────────────────────────────────────────
+const NAV_ITEMS = [
+  {id:'dashboard',label:'Dashboard',       icon:'grid',  group:'MONITOREO'},
+  {id:'map',       label:'Mapa de Spots',  icon:'map',   group:'MONITOREO'},
+  {id:'log',       label:'Historial',      icon:'list',  group:'MONITOREO'},
+  {id:'admin',     label:'Gestión Spots',  icon:'db',    group:'ADMINISTRACIÓN'},
+  {id:'arduino',   label:'Hardware / Arduino',icon:'cpu',group:'ADMINISTRACIÓN'},
+];
+
+// ── Tweaks ────────────────────────────────────────────────────────────────────
+const ACCENTS = ['#0891b2','#2563eb','#7c3aed','#059669','#d97706','#dc2626'];
+
+function TweaksFlyout({open, dark, onDark, accent, onAccent}) {
+  return (
+    <div className={`tweaks-flyout ${open?'open':''}`}>
+      <div className="tweaks-hd">Tweaks</div>
+      <div>
+        <div className="tweaks-section-label">Tema</div>
+        <div className="toggle-row">
+          <span className="toggle-label">{dark?'Oscuro':'Claro'}</span>
+          <button className={`toggle ${dark?'on':''}`} onClick={()=>onDark(!dark)}>
+            <div className="toggle-track"><div className="toggle-knob"/></div>
+          </button>
+        </div>
+      </div>
+      <div>
+        <div className="tweaks-section-label">Acento</div>
+        <div className="color-row">
+          {ACCENTS.map(a=>(
+            <div key={a} className={`color-dot ${accent===a?'sel':''}`} style={{background:a}} onClick={()=>onAccent(a)}/>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────────────
+function App() {
+  const def = window.TWEAK_DEFAULTS || {dark:true, accent:'#0891b2'};
+  const [screen,  setScreen]  = useState(()=>localStorage.getItem('sp2_screen')||'dashboard');
+  const [dark,    setDark]    = useState(()=>localStorage.getItem('sp2_dark')==='true'||(localStorage.getItem('sp2_dark')===null&&def.dark));
+  const [accent,  setAccent]  = useState(()=>localStorage.getItem('sp2_accent')||def.accent);
+  const [tweaks,  setTweaks]  = useState(false);
+  const [spots,   setSpots]   = useState(SPOTS_INIT);
+  const [gates,   setGates]   = useState(GATES_INIT);
+
+  useEffect(()=>{
+    document.documentElement.className = dark ? 'dark' : 'light';
+    localStorage.setItem('sp2_dark', dark);
+  },[dark]);
+
+  useEffect(()=>{
+    const r = document.documentElement;
+    r.style.setProperty('--accent', accent);
+    r.style.setProperty('--accent-light', accent+'22');
+    r.style.setProperty('--accent-hover', accent+'dd');
+    localStorage.setItem('sp2_accent', accent);
+  },[accent]);
+
+  useEffect(()=>{
+    const h = e => {
+      if(e.data?.type==='__activate_edit_mode')   setTweaks(true);
+      if(e.data?.type==='__deactivate_edit_mode') setTweaks(false);
+    };
+    window.addEventListener('message',h);
+    window.parent.postMessage({type:'__edit_mode_available'},'*');
+    return ()=>window.removeEventListener('message',h);
+  },[]);
+
+  const handleDark   = d => { setDark(d);   window.parent.postMessage({type:'__edit_mode_set_keys',edits:{dark:d}},'*'); };
+  const handleAccent = a => { setAccent(a); window.parent.postMessage({type:'__edit_mode_set_keys',edits:{accent:a}},'*'); };
+  const go = s => { setScreen(s); localStorage.setItem('sp2_screen',s); };
+
+  const occ = spots.filter(s=>s.isOccupied).length;
+  const pageTitle = {dashboard:'Dashboard',map:'Mapa de Spots',log:'Historial',admin:'Gestión de Spots',arduino:'Hardware / Arduino'}[screen];
+
+  const renderPage = () => {
+    switch(screen) {
+      case 'dashboard': return <PageDashboard spots={spots} gates={gates}/>;
+      case 'map':       return <PageMap spots={spots} setSpots={setSpots} gates={gates} setGates={setGates}/>;
+      case 'log':       return <PageLog/>;
+      case 'admin':     return <PageAdmin spots={spots} setSpots={setSpots}/>;
+      case 'arduino':   return <PageArduino/>;
+    }
+  };
+
+  return (
+    <>
+      {/* Window title bar */}
+      <div className="titlebar">
+        <svg className="titlebar-icon" viewBox="0 0 16 16" fill="none">
+          <rect width="16" height="16" rx="3" fill="var(--accent)"/>
+          <rect x="4" y="4" width="8" height="8" rx="1" fill="none" stroke="white" strokeWidth="1.5"/>
+          <path d="M6 8h2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+        <span className="titlebar-title">Smart Parking Lot — Admin Console</span>
+        <div className="titlebar-caption">
+          <button className="caption-btn" title="Minimizar">&#x2014;</button>
+          <button className="caption-btn" title="Maximizar">&#x25A1;</button>
+          <button className="caption-btn close" title="Cerrar">&#x2715;</button>
+        </div>
+      </div>
+
+      <div className="app-shell">
+        {/* Navigation pane */}
+        <div className="nav-pane">
+          <div className="nav-header">
+            <button className="nav-menu-btn"><I n="menu" s={16}/></button>
+            <div className="nav-search">
+              <I n="search" s={11}/>
+              <span>Buscar</span>
+            </div>
+          </div>
+
+          <div className="nav-lot">
+            <div className="nav-lot-label">Parqueadero</div>
+            <div className="nav-lot-name">Central Norte</div>
+            <div className="nav-lot-row">
+              <span className="badge badge-s">En línea</span>
+              <span style={{fontSize:10,color:'var(--tx3)'}}>{occ}/{spots.length} spots</span>
+            </div>
+          </div>
+
+          <div className="nav-items">
+            {['MONITOREO','ADMINISTRACIÓN'].map(g=>(
+              <div key={g}>
+                <div className="nav-section-header">{g}</div>
+                {NAV_ITEMS.filter(n=>n.group===g).map(n=>(
+                  <div key={n.id} className={`nav-item ${screen===n.id?'active':''}`} onClick={()=>go(n.id)}>
+                    <I n={n.icon} s={15}/>
+                    {n.label}
+                    {n.id==='log' && <span className="nav-item-badge">2</span>}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+
+          <div className="nav-footer">
+            <div className="nav-settings-item"><I n="settings" s={14}/>Configuración</div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="content-area">
+          <div className="content-header">
+            <div>
+              <div className="content-title">{pageTitle}</div>
+            </div>
+            <div className="row" style={{gap:6}}>
+              <span className="badge badge-w" style={{gap:4}}><I n="alert" s={10}/>2 alertas</span>
+              <button className="cmd-btn" style={{borderRadius:4}}><I n="refresh" s={11}/>Actualizar</button>
+            </div>
+          </div>
+
+          {screen==='map'
+            ? <PageMap spots={spots} setSpots={setSpots} gates={gates} setGates={setGates}/>
+            : renderPage()
+          }
+
+          <div className="statusbar">
+            <span className="row" style={{gap:5}}><span className="status-led"/>Arduino COM3</span>
+            <span className="statusbar-sep"/>
+            <span>{occ}/{spots.length} spots · {Math.round(occ/spots.length*100)}% ocupado</span>
+            <span className="statusbar-sep"/>
+            <span><I n="clock" s={9}/> Última lectura: hace 2s</span>
+            <span style={{marginLeft:'auto'}}>Smart Parking Lot v1.0 · .NET 10</span>
+          </div>
+        </div>
+      </div>
+
+      <TweaksFlyout open={tweaks} dark={dark} onDark={handleDark} accent={accent} onAccent={handleAccent}/>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
