@@ -24,7 +24,8 @@ public sealed record HardwareConfig(
     [property: JsonPropertyName("baudRate")] int BaudRate,
     [property: JsonPropertyName("sensors")]  IReadOnlyList<SensorMapping> Sensors,
     [property: JsonPropertyName("gates")]    IReadOnlyList<GateMapping> Gates,
-    [property: JsonPropertyName("manualApprovalTimeoutSeconds")] int ManualApprovalTimeoutSeconds = 15)
+    [property: JsonPropertyName("manualApprovalTimeoutSeconds")] int ManualApprovalTimeoutSeconds = 15,
+    [property: JsonPropertyName("allowedPlates")] IReadOnlyList<string>? AllowedPlates = null)
 {
     public static HardwareConfig Load(string path)
     {
