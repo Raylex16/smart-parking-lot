@@ -2,6 +2,19 @@
 
 A smart parking lot entry simulator built with **C# 14 / .NET 10**. This project has an **educational software design** focus and applies **GRASP** principles and patterns (General Responsibility Assignment Software Patterns).
 
+## Deliverables
+
+- [x] **Updated UML class diagram showing the patterns** — see [Third Preview](#third-preview)
+- [x] **Public Git repository with meaningful commits** — [github.com/Raylex16/smart-parking-lot](https://github.com/Raylex16/smart-parking-lot)
+- [x] **Short design note**
+  - [x] Use case — see [Use Case Flow](#use-case-flow)
+  - [x] Problem — see [Objective](#objective)
+  - [x] Identified and implemented patterns — see [Applied GRASP Principles](#applied-grasp-principles)
+  - [x] GRASP and SOLID justification — see [Applied GRASP Principles](#applied-grasp-principles) and [Architecture](#architecture)
+- [x] **Execution evidence**
+  - [x] Console output — see [Expected Output](#expected-output)
+  - [x] Video — see [Demo Videos](#demo-videos)
+
 ## Objective
 
 Demonstrate how GRASP principles guide responsibility assignment in a real object-oriented system, using vehicle access control in a parking lot as the use case.
@@ -78,6 +91,14 @@ EntryRequest ──> IGateRequestHandler ──> ICapacityService ──> Parkin
 
 ## UML Modeling
 
+### Third Preview
+
+This is the latest UML draft and the main visual reference for the current design.
+
+![System UML Diagram - Third Preview](docs/third-preview/SmartParkingLot%20-%20UML%20Class%20Diagram.png)
+
+[Open the PDF version](docs/third-preview/SmartParkingLot%20-%20UML%20Class%20Diagram.pdf)
+
 ### Second Preview (current)
 
 The UML diagram reflects the current modular Clean Architecture: `Core`, `Application`, `Hardware`, and `Cli`, including the `IGateRequestHandler`, `IGate` interfaces and the `SmartParkingLot.Core.Ports` namespace.
@@ -114,6 +135,12 @@ The simulator processes 4 entry requests for a parking lot with 3 spots:
 
 - The first 3 vehicles are granted access (spots A1, A2, B1).
 - The 4th vehicle is rejected due to lack of availability.
+
+## Demo Videos
+
+Console demonstrations and hardware footage are hosted on Google Drive (files exceed GitHub's size limit and are kept out of the repository):
+
+[Open the Demo Videos folder on Google Drive](https://drive.google.com/drive/folders/1gAFLsAwViBYA7LhLFxH9fZvhalKgFirc?usp=sharing)
 
 ## Technologies
 
