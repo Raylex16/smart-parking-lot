@@ -6,13 +6,8 @@ A smart parking lot entry simulator built with **C# 14 / .NET 10**. This project
 
 - [x] **Updated UML class diagram showing the patterns** — see [Third Preview](#third-preview)
 - [x] **Public Git repository with meaningful commits** — [github.com/Raylex16/smart-parking-lot](https://github.com/Raylex16/smart-parking-lot)
-- [x] **Short design note**
-  - [x] Use case — see [Use Case Flow](#use-case-flow)
-  - [x] Problem — see [Objective](#objective)
-  - [x] Identified and implemented patterns — see [Applied GRASP Principles](#applied-grasp-principles)
-  - [x] GRASP and SOLID justification — see [Applied GRASP Principles](#applied-grasp-principles) and [Architecture](#architecture)
+- [x] **Short design note** — see ![Design Note](docs/patrones/Patterns_Smart_Parking_Lot.pdf)
 - [x] **Execution evidence**
-  - [x] Console output — see [Expected Output](#expected-output)
   - [x] Video — see [Demo Videos](#demo-videos)
 
 ## Objective
@@ -91,7 +86,7 @@ EntryRequest ──> IGateRequestHandler ──> ICapacityService ──> Parkin
 
 ## UML Modeling
 
-### Third Preview
+### Third Preview (current)
 
 This is the latest UML draft and the main visual reference for the current design.
 
@@ -99,7 +94,7 @@ This is the latest UML draft and the main visual reference for the current desig
 
 [Open the PDF version](docs/third-preview/SmartParkingLot%20-%20UML%20Class%20Diagram.pdf)
 
-### Second Preview (current)
+### Second Preview 
 
 The UML diagram reflects the current modular Clean Architecture: `Core`, `Application`, `Hardware`, and `Cli`, including the `IGateRequestHandler`, `IGate` interfaces and the `SmartParkingLot.Core.Ports` namespace.
 
