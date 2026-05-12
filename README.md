@@ -2,6 +2,19 @@
 
 A smart parking lot entry simulator built with **C# 14 / .NET 10**. This project has an **educational software design** focus and applies **GRASP** principles and patterns (General Responsibility Assignment Software Patterns).
 
+## Deliverables
+
+- [x] **Updated UML class diagram showing the patterns** — see [Third Preview](#third-preview)
+- [x] **Public Git repository with meaningful commits** — [github.com/Raylex16/smart-parking-lot](https://github.com/Raylex16/smart-parking-lot)
+- [x] **Short design note**
+  - [x] Use case — see [Use Case Flow](#use-case-flow)
+  - [x] Problem — see [Objective](#objective)
+  - [x] Identified and implemented patterns — see [Applied GRASP Principles](#applied-grasp-principles)
+  - [x] GRASP and SOLID justification — see [Applied GRASP Principles](#applied-grasp-principles) and [Architecture](#architecture)
+- [x] **Execution evidence**
+  - [x] Console output — see [Expected Output](#expected-output)
+  - [x] Video — see [Demo Videos](#demo-videos)
+
 ## Objective
 
 Demonstrate how GRASP principles guide responsibility assignment in a real object-oriented system, using vehicle access control in a parking lot as the use case.
