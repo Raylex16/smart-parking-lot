@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!--
+    Schema definition
+  -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- ===== DashboardPage ===== -->
+  <data name="DashboardPageTitle.Text" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+  <data name="DashboardRefreshButton.Text" xml:space="preserve">
+    <value>Actualizar</value>
+  </data>
+  <data name="DashboardTileOccupied.Text" xml:space="preserve">
+    <value>Spots ocupados</value>
+  </data>
+  <data name="DashboardTileAvailable.Text" xml:space="preserve">
+    <value>Disponibles</value>
+  </data>
+  <data name="DashboardTileAvailableSub.Text" xml:space="preserve">
+    <value>spots libres</value>
+  </data>
+  <data name="DashboardTileRequests.Text" xml:space="preserve">
+    <value>Solicitudes hoy</value>
+  </data>
+  <data name="DashboardTileRequestsSub.Text" xml:space="preserve">
+    <value>ver Historial</value>
+  </data>
+  <data name="DashboardTileOccupancy.Text" xml:space="preserve">
+    <value>Ocupación</value>
+  </data>
+  <data name="DashboardTileOccupancySub.Text" xml:space="preserve">
+    <value>nivel actual</value>
+  </data>
+  <data name="DashboardZoneCardTitle.Text" xml:space="preserve">
+    <value>Ocupación por zona</value>
+  </data>
+  <data name="DashboardAlertsCardTitle.Text" xml:space="preserve">
+    <value>Alertas recientes</value>
+  </data>
+  <data name="DashboardGatesCardTitle.Text" xml:space="preserve">
+    <value>Estado de gates</value>
+  </data>
+
+  <!-- ===== MapPage ===== -->
+  <data name="MapPageTitle.Text" xml:space="preserve">
+    <value>Mapa de Spots</value>
+  </data>
+  <data name="MapEntryButton.Text" xml:space="preserve">
+    <value>Solicitar entrada</value>
+  </data>
+  <data name="MapExitButton.Text" xml:space="preserve">
+    <value>Solicitar salida</value>
+  </data>
+  <data name="MapSimEntryButton.Text" xml:space="preserve">
+    <value>Simular IR entrada</value>
+  </data>
+  <data name="MapSimExitButton.Text" xml:space="preserve">
+    <value>Simular IR salida</value>
+  </data>
+  <data name="MapLegendFree.Text" xml:space="preserve">
+    <value>Libre</value>
+  </data>
+  <data name="MapLegendOccupied.Text" xml:space="preserve">
+    <value>Ocupado</value>
+  </data>
+  <data name="MapEntradasLabel.Text" xml:space="preserve">
+    <value>ENTRADAS</value>
+  </data>
+  <data name="MapSalidasLabel.Text" xml:space="preserve">
+    <value>SALIDAS</value>
+  </data>
+  <data name="MapSpotHint.Text" xml:space="preserve">
+    <value>Click en un spot para cambiar su estado (publica evento de sensor).</value>
+  </data>
+  <data name="MapGateControlCardTitle.Text" xml:space="preserve">
+    <value>Control de Gates</value>
+  </data>
+  <data name="MapSummaryCardTitle.Text" xml:space="preserve">
+    <value>Resumen</value>
+  </data>
+  <data name="MapSummaryFree.Text" xml:space="preserve">
+    <value>Libres</value>
+  </data>
+  <data name="MapSummaryOccupied.Text" xml:space="preserve">
+    <value>Ocupados</value>
+  </data>
+  <data name="MapSummaryTotal.Text" xml:space="preserve">
+    <value>Total</value>
+  </data>
+
+  <!-- ===== LogPage ===== -->
+  <data name="LogPageTitle.Text" xml:space="preserve">
+    <value>Historial</value>
+  </data>
+  <data name="LogTypeCombo.Header" xml:space="preserve">
+    <value>Tipo</value>
+  </data>
+  <data name="LogTypeComboItemRequests.Content" xml:space="preserve">
+    <value>Solicitudes (placa)</value>
+  </data>
+  <data name="LogTypeComboItemSensor.Content" xml:space="preserve">
+    <value>Lecturas de sensor</value>
+  </data>
+  <data name="LogTypeComboItemDevice.Content" xml:space="preserve">
+    <value>Acciones de dispositivo</value>
+  </data>
+  <data name="LogQueryBox.Header" xml:space="preserve">
+    <value>Filtro / clave</value>
+  </data>
+  <data name="LogQueryBox.PlaceholderText" xml:space="preserve">
+    <value>placa, sensorId, GATE-G-01...</value>
+  </data>
+  <data name="LogSearchButton.Text" xml:space="preserve">
+    <value>Buscar</value>
+  </data>
+  <data name="LogRefreshButton.Text" xml:space="preserve">
+    <value>Actualizar</value>
+  </data>
+  <data name="LogColDateTime.Text" xml:space="preserve">
+    <value>FECHA / HORA</value>
+  </data>
+  <data name="LogColType.Text" xml:space="preserve">
+    <value>TIPO</value>
+  </data>
+  <data name="LogColDetail.Text" xml:space="preserve">
+    <value>DETALLE</value>
+  </data>
+  <data name="LogColRef.Text" xml:space="preserve">
+    <value>REFERENCIA</value>
+  </data>
+  <data name="LogEmptyState.Text" xml:space="preserve">
+    <value>Sin resultados.</value>
+  </data>
+
+  <!-- ===== AdminPage ===== -->
+  <data name="AdminPageTitle.Text" xml:space="preserve">
+    <value>Gestión de Spots</value>
+  </data>
+  <data name="AdminPageSubtitle.Text" xml:space="preserve">
+    <value>Lista completa cargada desde la base de datos</value>
+  </data>
+  <data name="AdminSearchBox.PlaceholderText" xml:space="preserve">
+    <value>Buscar por ID, tipo, dirección...</value>
+  </data>
+  <data name="AdminTypeFilterAll.Content" xml:space="preserve">
+    <value>Todos los tipos</value>
+  </data>
+  <data name="AdminTypeFilterEstandar.Content" xml:space="preserve">
+    <value>Estándar</value>
+  </data>
+  <data name="AdminTypeFilterMoto.Content" xml:space="preserve">
+    <value>Moto</value>
+  </data>
+  <data name="AdminRefreshButton.Text" xml:space="preserve">
+    <value>Actualizar</value>
+  </data>
+  <data name="AdminColId.Text" xml:space="preserve">
+    <value>ID</value>
+  </data>
+  <data name="AdminColAddress.Text" xml:space="preserve">
+    <value>DIRECCIÓN</value>
+  </data>
+  <data name="AdminColType.Text" xml:space="preserve">
+    <value>TIPO</value>
+  </data>
+  <data name="AdminColFloor.Text" xml:space="preserve">
+    <value>PISO</value>
+  </data>
+  <data name="AdminColState.Text" xml:space="preserve">
+    <value>ESTADO</value>
+  </data>
+
+  <!-- ===== HardwarePage ===== -->
+  <data name="HardwarePageTitle.Text" xml:space="preserve">
+    <value>Hardware / Arduino</value>
+  </data>
+  <data name="HardwarePageSubtitle.Text" xml:space="preserve">
+    <value>Estado del bridge serial y log en vivo</value>
+  </data>
+  <data name="HardwareConnectionCardTitle.Text" xml:space="preserve">
+    <value>Conexión — IArduinoReader</value>
+  </data>
+  <data name="HardwarePortLabel.Text" xml:space="preserve">
+    <value>PUERTO</value>
+  </data>
+  <data name="HardwareBaudRateLabel.Text" xml:space="preserve">
+    <value>BAUD RATE</value>
+  </data>
+  <data name="HardwareScanPortsButton.Text" xml:space="preserve">
+    <value>Escanear puertos</value>
+  </data>
+  <data name="HardwareLiveLogCardTitle.Text" xml:space="preserve">
+    <value>Log en vivo</value>
+  </data>
+  <data name="HardwareAutoScrollOff.Text" xml:space="preserve">
+    <value>Pausado</value>
+  </data>
+  <data name="HardwareAutoScrollOn.Text" xml:space="preserve">
+    <value>Auto-scroll</value>
+  </data>
+  <data name="HardwareSensorCardTitle.Text" xml:space="preserve">
+    <value>Sensor manual</value>
+  </data>
+  <data name="HardwareSensorDesc.Text" xml:space="preserve">
+    <value>Publica un evento de SensorReadingReceived (simula lectura)</value>
+  </data>
+  <data name="HardwareSensorStateOccupied.Content" xml:space="preserve">
+    <value>OCUPADO (1)</value>
+  </data>
+  <data name="HardwareSensorStateFree.Content" xml:space="preserve">
+    <value>LIBRE (0)</value>
+  </data>
+  <data name="HardwarePublishButton.Content" xml:space="preserve">
+    <value>Publicar</value>
+  </data>
+  <data name="HardwareSimEntryButton.Text" xml:space="preserve">
+    <value>Simular IR entrada</value>
+  </data>
+  <data name="HardwareSimExitButton.Text" xml:space="preserve">
+    <value>Simular IR salida</value>
+  </data>
+  <data name="HardwareFileLogCardTitle.Text" xml:space="preserve">
+    <value>Archivo de log de hoy</value>
+  </data>
+  <data name="HardwareLoadFileButton.Text" xml:space="preserve">
+    <value>Cargar</value>
+  </data>
+
+</root>

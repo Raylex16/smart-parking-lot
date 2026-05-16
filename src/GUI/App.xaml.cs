@@ -1,13 +1,19 @@
 using System;
 using System.IO;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
+using SmartParkingLot.Gui.Bootstrap;
 
 namespace SmartParkingLot.Gui;
 
 public partial class App : Microsoft.UI.Xaml.Application
 {
     public static MainWindow? MainWindow { get; private set; }
-    public static ParkingServices? Services { get; private set; }
+
+    /// <summary>
+    /// Application-wide DI container. Available after OnLaunched completes bootstrap.
+    /// </summary>
+    public static IServiceProvider Services { get; private set; } = null!;
 
     private static readonly string CrashLog =
         Path.Combine(Path.GetTempPath(), "SmartParkingLot.Gui-crash.log");
@@ -53,9 +59,9 @@ public partial class App : Microsoft.UI.Xaml.Application
 
         try
         {
-            Services = await ParkingServices.BootstrapAsync();
+            Services = await ServiceCollectionExtensions.BuildParkingServiceProviderAsync();
             Trace("OnLaunched: services ready");
-            MainWindow.OnServicesReady(Services);
+            MainWindow.OnServicesReady();
         }
         catch (Exception ex)
         {

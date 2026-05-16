@@ -42,6 +42,9 @@ public class GateController : IGateRequestHandler
         _gates[gateId] = gate;
     }
 
+    public IReadOnlyDictionary<string, IGate> GetRegisteredGates() =>
+        _gates.AsReadOnly();
+
     public void OpenGate(string gateId)
     {
         var gate = GetGateById(gateId);

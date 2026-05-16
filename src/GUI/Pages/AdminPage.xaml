@@ -2,7 +2,8 @@
 <Page
     x:Class="SmartParkingLot.Gui.Pages.AdminPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:SmartParkingLot.Gui.ViewModels">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -17,11 +18,11 @@
               BorderBrush="{ThemeResource StrokeBrush}"
               BorderThickness="0,0,0,1">
             <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="Gestión de Spots"
+                <TextBlock x:Uid="AdminPageTitle"
                            FontSize="15"
                            FontWeight="SemiBold"
                            Foreground="{ThemeResource Tx1Brush}" />
-                <TextBlock Text="Lista completa cargada desde la base de datos"
+                <TextBlock x:Uid="AdminPageSubtitle"
                            FontSize="11"
                            Foreground="{ThemeResource Tx3Brush}" />
             </StackPanel>
@@ -32,19 +33,21 @@
                     BorderBrush="{ThemeResource Stroke2Brush}"
                     BorderThickness="0,0,0,1">
             <AutoSuggestBox x:Name="SearchBox"
-                            PlaceholderText="Buscar por ID, tipo, dirección..."
+                            x:Uid="AdminSearchBox"
                             MinWidth="320"
                             TextChanged="OnSearchTextChanged" />
             <ComboBox x:Name="TypeFilter" SelectedIndex="0" SelectionChanged="OnTypeFilterChanged">
-                <ComboBoxItem Content="Todos los tipos" Tag="" />
-                <ComboBoxItem Content="Estándar" Tag="Estándar" />
+                <ComboBoxItem x:Uid="AdminTypeFilterAll" Tag="" />
+                <ComboBoxItem x:Uid="AdminTypeFilterEstandar" Tag="Estándar" />
                 <ComboBoxItem Content="PMR" Tag="PMR" />
-                <ComboBoxItem Content="Moto" Tag="Moto" />
+                <ComboBoxItem x:Uid="AdminTypeFilterMoto" Tag="Moto" />
             </ComboBox>
             <Button Click="OnRefreshClick">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="" FontSize="12" />
-                    <TextBlock Text="Actualizar" />
+                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph=""
+                              AutomationProperties.Name="Actualizar"
+                              FontSize="12" />
+                    <TextBlock x:Uid="AdminRefreshButton" />
                 </StackPanel>
             </Button>
         </StackPanel>
@@ -62,23 +65,62 @@
                             <ColumnDefinition Width="100" />
                             <ColumnDefinition Width="120" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="ID"
+                        <TextBlock x:Uid="AdminColId" Grid.Column="0"
                                    FontSize="10" FontWeight="SemiBold" CharacterSpacing="60"
                                    Foreground="{ThemeResource Tx3Brush}" />
-                        <TextBlock Grid.Column="1" Text="DIRECCIÓN"
+                        <TextBlock x:Uid="AdminColAddress" Grid.Column="1"
                                    FontSize="10" FontWeight="SemiBold" CharacterSpacing="60"
                                    Foreground="{ThemeResource Tx3Brush}" />
-                        <TextBlock Grid.Column="2" Text="TIPO"
+                        <TextBlock x:Uid="AdminColType" Grid.Column="2"
                                    FontSize="10" FontWeight="SemiBold" CharacterSpacing="60"
                                    Foreground="{ThemeResource Tx3Brush}" />
-                        <TextBlock Grid.Column="3" Text="PISO"
+                        <TextBlock x:Uid="AdminColFloor" Grid.Column="3"
                                    FontSize="10" FontWeight="SemiBold" CharacterSpacing="60"
                                    Foreground="{ThemeResource Tx3Brush}" />
-                        <TextBlock Grid.Column="4" Text="ESTADO"
+                        <TextBlock x:Uid="AdminColState" Grid.Column="4"
                                    FontSize="10" FontWeight="SemiBold" CharacterSpacing="60"
                                    Foreground="{ThemeResource Tx3Brush}" />
                     </Grid>
-                    <StackPanel x:Name="RowsPanel" />
+                    <ItemsRepeater ItemsSource="{x:Bind ViewModel.FilteredSpots, Mode=OneWay}">
+                        <ItemsRepeater.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SpotAdminRowVm">
+                                <Grid Padding="14,8,14,8"
+                                      BorderBrush="{ThemeResource Stroke2Brush}"
+                                      BorderThickness="0,0,0,1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="80" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="100" />
+                                        <ColumnDefinition Width="100" />
+                                        <ColumnDefinition Width="120" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="{x:Bind Id}"
+                                               FontFamily="Cascadia Code, Consolas, monospace"
+                                               FontSize="11" FontWeight="SemiBold"
+                                               VerticalAlignment="Center"
+                                               Foreground="{ThemeResource Tx1Brush}" />
+                                    <TextBlock Grid.Column="1"
+                                               Text="{x:Bind Address}"
+                                               FontSize="12" VerticalAlignment="Center"
+                                               Foreground="{ThemeResource Tx2Brush}"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="2"
+                                               Text="{x:Bind Type}"
+                                               FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{ThemeResource Tx2Brush}" />
+                                    <TextBlock Grid.Column="3"
+                                               Text="{x:Bind Floor}"
+                                               FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{ThemeResource Tx3Brush}" />
+                                    <TextBlock Grid.Column="4"
+                                               Text="{x:Bind StateLabel}"
+                                               FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{ThemeResource Tx2Brush}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsRepeater.ItemTemplate>
+                    </ItemsRepeater>
                 </StackPanel>
             </ScrollViewer>
         </Border>
@@ -87,7 +129,7 @@
               Background="{ThemeResource Layer1Brush}"
               BorderBrush="{ThemeResource StrokeBrush}"
               BorderThickness="0,1,0,0">
-            <TextBlock x:Name="FooterText"
+            <TextBlock Text="{x:Bind ViewModel.FooterText, Mode=OneWay}"
                        FontSize="11"
                        Foreground="{ThemeResource Tx3Brush}" />
         </Grid>

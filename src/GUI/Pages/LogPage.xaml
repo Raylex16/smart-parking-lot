@@ -2,7 +2,8 @@
 <Page
     x:Class="SmartParkingLot.Gui.Pages.LogPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:SmartParkingLot.Gui.ViewModels">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -17,11 +18,11 @@
               BorderBrush="{ThemeResource StrokeBrush}"
               BorderThickness="0,0,0,1">
             <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="Historial"
+                <TextBlock x:Uid="LogPageTitle"
                            FontSize="15"
                            FontWeight="SemiBold"
                            Foreground="{ThemeResource Tx1Brush}" />
-                <TextBlock x:Name="HeaderSubtitle"
+                <TextBlock Text="{x:Bind ViewModel.HeaderSubtitle, Mode=OneWay}"
                            FontSize="11"
                            Foreground="{ThemeResource Tx3Brush}" />
             </StackPanel>
@@ -33,30 +34,33 @@
                     BorderBrush="{ThemeResource Stroke2Brush}"
                     BorderThickness="0,0,0,1">
             <ComboBox x:Name="TypeCombo"
-                      Header="Tipo"
+                      x:Uid="LogTypeCombo"
                       SelectedIndex="0"
                       MinWidth="160"
                       SelectionChanged="OnFilterChanged">
-                <ComboBoxItem Content="Solicitudes (placa)" />
-                <ComboBoxItem Content="Lecturas de sensor" />
-                <ComboBoxItem Content="Acciones de dispositivo" />
+                <ComboBoxItem x:Uid="LogTypeComboItemRequests" />
+                <ComboBoxItem x:Uid="LogTypeComboItemSensor" />
+                <ComboBoxItem x:Uid="LogTypeComboItemDevice" />
             </ComboBox>
             <AutoSuggestBox x:Name="QueryBox"
-                            Header="Filtro / clave"
-                            PlaceholderText="placa, sensorId, GATE-G-01..."
+                            x:Uid="LogQueryBox"
                             MinWidth="280"
                             QuerySubmitted="OnQuerySubmitted" />
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom" Margin="0,0,0,2">
                 <Button x:Name="LoadBtn" Click="OnLoadClick" Style="{StaticResource AccentButtonStyle}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="" FontSize="12" />
-                        <TextBlock Text="Buscar" />
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE721;"
+                                  AutomationProperties.Name="Buscar"
+                                  FontSize="12" />
+                        <TextBlock x:Uid="LogSearchButton" />
                     </StackPanel>
                 </Button>
                 <Button x:Name="RefreshBtn" Click="OnLoadClick">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="" FontSize="12" />
-                        <TextBlock Text="Actualizar" />
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE72C;"
+                                  AutomationProperties.Name="Actualizar"
+                                  FontSize="12" />
+                        <TextBlock x:Uid="LogRefreshButton" />
                     </StackPanel>
                 </Button>
             </StackPanel>
@@ -64,48 +68,107 @@
 
         <!-- Data grid -->
         <Border Grid.Row="2" Style="{StaticResource CardStyle}" Margin="16">
-            <ListView x:Name="ResultsList"
-                      SelectionMode="Single"
-                      ShowsScrollingPlaceholders="False"
-                      IsItemClickEnabled="False"
-                      Padding="0">
-                <ListView.HeaderTemplate>
-                    <DataTemplate>
-                        <Grid Padding="14,8" Background="{ThemeResource Layer1Brush}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150" />
-                                <ColumnDefinition Width="120" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="160" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="FECHA / HORA"
-                                       Grid.Column="0"
-                                       FontSize="10"
-                                       FontWeight="SemiBold"
-                                       CharacterSpacing="60"
-                                       Foreground="{ThemeResource Tx3Brush}" />
-                            <TextBlock Text="TIPO"
-                                       Grid.Column="1"
-                                       FontSize="10"
-                                       FontWeight="SemiBold"
-                                       CharacterSpacing="60"
-                                       Foreground="{ThemeResource Tx3Brush}" />
-                            <TextBlock Text="DETALLE"
-                                       Grid.Column="2"
-                                       FontSize="10"
-                                       FontWeight="SemiBold"
-                                       CharacterSpacing="60"
-                                       Foreground="{ThemeResource Tx3Brush}" />
-                            <TextBlock Text="REFERENCIA"
-                                       Grid.Column="3"
-                                       FontSize="10"
-                                       FontWeight="SemiBold"
-                                       CharacterSpacing="60"
-                                       Foreground="{ThemeResource Tx3Brush}" />
-                        </Grid>
-                    </DataTemplate>
-                </ListView.HeaderTemplate>
-            </ListView>
+            <StackPanel>
+                <ListView x:Name="ResultsList"
+                          ItemsSource="{x:Bind ViewModel.Results, Mode=OneWay}"
+                          SelectionMode="Single"
+                          ShowsScrollingPlaceholders="False"
+                          IsItemClickEnabled="False"
+                          Padding="0">
+                    <ListView.HeaderTemplate>
+                        <DataTemplate>
+                            <Grid Padding="14,8" Background="{ThemeResource Layer1Brush}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="160" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Uid="LogColDateTime"
+                                           Grid.Column="0"
+                                           FontSize="10"
+                                           FontWeight="SemiBold"
+                                           CharacterSpacing="60"
+                                           Foreground="{ThemeResource Tx3Brush}" />
+                                <TextBlock x:Uid="LogColType"
+                                           Grid.Column="1"
+                                           FontSize="10"
+                                           FontWeight="SemiBold"
+                                           CharacterSpacing="60"
+                                           Foreground="{ThemeResource Tx3Brush}" />
+                                <TextBlock x:Uid="LogColDetail"
+                                           Grid.Column="2"
+                                           FontSize="10"
+                                           FontWeight="SemiBold"
+                                           CharacterSpacing="60"
+                                           Foreground="{ThemeResource Tx3Brush}" />
+                                <TextBlock x:Uid="LogColRef"
+                                           Grid.Column="3"
+                                           FontSize="10"
+                                           FontWeight="SemiBold"
+                                           CharacterSpacing="60"
+                                           Foreground="{ThemeResource Tx3Brush}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.HeaderTemplate>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="MinHeight" Value="0" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="vm:LogRowVm">
+                            <Grid Padding="14,8,14,8"
+                                  BorderBrush="{ThemeResource Stroke2Brush}"
+                                  BorderThickness="0,0,0,1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="160" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="{x:Bind Timestamp}"
+                                           FontFamily="Cascadia Code, Consolas, monospace"
+                                           FontSize="11"
+                                           Foreground="{ThemeResource Tx2Brush}"
+                                           VerticalAlignment="Center" />
+                                <Border Grid.Column="1"
+                                        Background="{x:Bind TypeBackground}"
+                                        CornerRadius="3" Padding="7,1,7,1"
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Left">
+                                    <TextBlock Text="{x:Bind TypeLabel}"
+                                               FontSize="10"
+                                               FontWeight="SemiBold"
+                                               CharacterSpacing="40"
+                                               Foreground="{x:Bind TypeForeground}" />
+                                </Border>
+                                <TextBlock Grid.Column="2"
+                                           Text="{x:Bind Detail}"
+                                           FontSize="12"
+                                           VerticalAlignment="Center"
+                                           Foreground="{ThemeResource Tx1Brush}"
+                                           TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Column="3"
+                                           Text="{x:Bind Reference}"
+                                           FontFamily="Cascadia Code, Consolas, monospace"
+                                           FontSize="11"
+                                           VerticalAlignment="Center"
+                                           Foreground="{ThemeResource Tx3Brush}"
+                                           TextTrimming="CharacterEllipsis" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <TextBlock x:Uid="LogEmptyState"
+                           Padding="24"
+                           HorizontalAlignment="Center"
+                           Foreground="{ThemeResource Tx3Brush}"
+                           Visibility="{x:Bind ViewModel.EmptyVisibility, Mode=OneWay}" />
+            </StackPanel>
         </Border>
     </Grid>
 </Page>

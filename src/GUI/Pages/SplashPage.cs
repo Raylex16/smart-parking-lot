@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using SmartParkingLot.Gui.Resources;
 
 namespace SmartParkingLot.Gui.Pages;
 
@@ -28,7 +29,7 @@ public sealed class SplashPage : Page
         };
         if (isError)
         {
-            text.Foreground = (Brush)XamlApp.Current.Resources["DangerBrush"];
+            text.Foreground = AppBrushes.Danger;
             text.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
         }
         panel.Children.Add(text);
@@ -55,7 +56,7 @@ public sealed class SettingsPage : Page
         panel.Children.Add(new TextBlock
         {
             Text = "Próximamente: tema, acento, idioma. El tema sigue al sistema (Configuración → Personalización → Colores).",
-            Foreground = (Brush)XamlApp.Current.Resources["Tx2Brush"]
+            Foreground = AppBrushes.Tx2
         });
         Content = panel;
     }

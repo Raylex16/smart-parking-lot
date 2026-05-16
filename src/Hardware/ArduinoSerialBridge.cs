@@ -4,7 +4,7 @@ using SmartParkingLot.Core.Interfaces;
 
 namespace SmartParkingLot.Hardware;
 
-public class ArduinoSerialBridge : IArduinoReader
+public class ArduinoSerialBridge : IArduinoReader, ISerialWriter
 {
     private const string LogSource = "ArduinoSerialBridge";
 
@@ -14,7 +14,7 @@ public class ArduinoSerialBridge : IArduinoReader
     private Thread? _readThread;
     private volatile bool _listening;
 
-    public bool IsListening => _listening;
+    public virtual bool IsListening => _listening;
 
     public ArduinoSerialBridge(string portName, int baudRate, IEventPublisher events, ILogger logger)
     {
@@ -25,7 +25,7 @@ public class ArduinoSerialBridge : IArduinoReader
         _logger = logger;
     }
 
-    public void StartListening()
+    public virtual void StartListening()
     {
         try
         {
@@ -48,7 +48,7 @@ public class ArduinoSerialBridge : IArduinoReader
         }
     }
 
-    public void StopListening()
+    public virtual void StopListening()
     {
         _listening = false;
 
@@ -99,13 +99,13 @@ public class ArduinoSerialBridge : IArduinoReader
         _logger.Debug(LogSource, $"Linea ignorada: '{line}'");
     }
 
-    public void WriteLine(string line)
+    public virtual void WriteLine(string line)
     {
         if (!_serialPort.IsOpen) return;
         _serialPort.WriteLine(line);
     }
 
-    public void Dispose()
+    public virtual void Dispose()
     {
         StopListening();
         _serialPort.Dispose();

@@ -2,7 +2,8 @@
 <Page
     x:Class="SmartParkingLot.Gui.Pages.HardwarePage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:SmartParkingLot.Gui.ViewModels">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -15,11 +16,11 @@
               BorderBrush="{ThemeResource StrokeBrush}"
               BorderThickness="0,0,0,1">
             <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="Hardware / Arduino"
+                <TextBlock x:Uid="HardwarePageTitle"
                            FontSize="15"
                            FontWeight="SemiBold"
                            Foreground="{ThemeResource Tx1Brush}" />
-                <TextBlock Text="Estado del bridge serial y log en vivo"
+                <TextBlock x:Uid="HardwarePageSubtitle"
                            FontSize="11"
                            Foreground="{ThemeResource Tx3Brush}" />
             </StackPanel>
@@ -41,29 +42,41 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Conexión — IArduinoReader" Style="{StaticResource CardTitleTextStyle}" />
-                                <ContentPresenter x:Name="ConnBadgeHost" Grid.Column="1" />
+                                <TextBlock x:Uid="HardwareConnectionCardTitle" Style="{StaticResource CardTitleTextStyle}" />
+                                <TextBlock Grid.Column="1"
+                                           Text="{x:Bind ViewModel.ConnectionLabel, Mode=OneWay}"
+                                           FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{ThemeResource Tx1Brush}"
+                                           VerticalAlignment="Center" />
                             </Grid>
 
                             <StackPanel Spacing="6" Margin="0,6,0,0">
-                                <TextBlock Text="PUERTO" Style="{StaticResource SectionHeaderTextStyle}" />
-                                <TextBox x:Name="PortBox" PlaceholderText="COM3" />
-                                <TextBlock Text="BAUD RATE" Style="{StaticResource SectionHeaderTextStyle}" />
-                                <TextBox x:Name="BaudBox" IsEnabled="False" />
+                                <TextBlock x:Uid="HardwarePortLabel" Style="{StaticResource SectionHeaderTextStyle}" />
+                                <TextBox Text="{x:Bind ViewModel.ConfigPort, Mode=OneWay}" PlaceholderText="COM3" />
+                                <TextBlock x:Uid="HardwareBaudRateLabel" Style="{StaticResource SectionHeaderTextStyle}" />
+                                <TextBox Text="{x:Bind ViewModel.ConfigBaudRate, Mode=OneWay}" IsEnabled="False" />
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
-                                <Button x:Name="ConnectBtn"
-                                        Click="OnToggleConnectionClick"
-                                        Style="{StaticResource AccentButtonStyle}" />
-                                <Button x:Name="ScanBtn" Click="OnScanClick">
+                                <Button Command="{x:Bind ViewModel.ToggleConnectionCommand}"
+                                        Style="{StaticResource AccentButtonStyle}">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="" FontSize="12" />
-                                        <TextBlock Text="Escanear puertos" />
+                                        <FontIcon FontFamily="Segoe Fluent Icons"
+                                                  Glyph="{x:Bind ViewModel.ConnectButtonGlyph, Mode=OneWay}"
+                                                  AutomationProperties.Name="{x:Bind ViewModel.ConnectButtonLabel, Mode=OneWay}"
+                                                  FontSize="12" />
+                                        <TextBlock Text="{x:Bind ViewModel.ConnectButtonLabel, Mode=OneWay}" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Command="{x:Bind ViewModel.ScanPortsCommand}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph=""
+                                                  AutomationProperties.Name="Escanear puertos"
+                                                  FontSize="12" />
+                                        <TextBlock x:Uid="HardwareScanPortsButton" />
                                     </StackPanel>
                                 </Button>
                             </StackPanel>
-                            <TextBlock x:Name="PortsList"
-                                       Text=""
+                            <TextBlock Text="{x:Bind ViewModel.PortsListText, Mode=OneWay}"
                                        FontFamily="Cascadia Code, Consolas, monospace"
                                        FontSize="11"
                                        Foreground="{ThemeResource Tx3Brush}"
@@ -79,14 +92,17 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Log en vivo" Style="{StaticResource CardTitleTextStyle}" />
+                                <TextBlock x:Uid="HardwareLiveLogCardTitle" Style="{StaticResource CardTitleTextStyle}" />
                                 <StackPanel Orientation="Horizontal" Spacing="6" Grid.Column="1">
-                                    <ToggleSwitch x:Name="AutoScrollToggle"
+                                    <ToggleSwitch IsOn="{x:Bind ViewModel.AutoScroll, Mode=TwoWay}"
+                                                  AutomationProperties.Name="Auto-scroll del log"
                                                   OffContent="Pausado"
-                                                  OnContent="Auto-scroll"
-                                                  IsOn="True" />
-                                    <Button x:Name="ClearLogBtn" Click="OnClearLogClick">
-                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="" FontSize="12" />
+                                                  OnContent="Auto-scroll" />
+                                    <Button Command="{x:Bind ViewModel.ClearLogCommand}"
+                                            AutomationProperties.Name="Limpiar log">
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph=""
+                                                  AutomationProperties.Name="Limpiar"
+                                                  FontSize="12" />
                                     </Button>
                                 </StackPanel>
                             </Grid>
@@ -98,7 +114,16 @@
                                     Padding="8"
                                     Height="240">
                                 <ScrollViewer x:Name="LogScroll" VerticalScrollBarVisibility="Auto">
-                                    <StackPanel x:Name="LogPanel" />
+                                    <ItemsRepeater ItemsSource="{x:Bind ViewModel.LogLines, Mode=OneWay}">
+                                        <ItemsRepeater.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:LogLineVm">
+                                                <TextBlock Text="{x:Bind Text}"
+                                                           FontFamily="Cascadia Code, Consolas, monospace"
+                                                           FontSize="11"
+                                                           Foreground="{x:Bind Foreground}" />
+                                            </DataTemplate>
+                                        </ItemsRepeater.ItemTemplate>
+                                    </ItemsRepeater>
                                 </ScrollViewer>
                             </Border>
                         </StackPanel>
@@ -114,8 +139,8 @@
 
                     <Border Grid.Column="0" Style="{StaticResource CardStyle}">
                         <StackPanel Padding="16" Spacing="6">
-                            <TextBlock Text="Sensor manual" Style="{StaticResource CardTitleTextStyle}" />
-                            <TextBlock Text="Publica un evento de SensorReadingReceived (simula lectura)"
+                            <TextBlock x:Uid="HardwareSensorCardTitle" Style="{StaticResource CardTitleTextStyle}" />
+                            <TextBlock x:Uid="HardwareSensorDesc"
                                        FontSize="11"
                                        Foreground="{ThemeResource Tx3Brush}" />
                             <Grid ColumnSpacing="6" Margin="0,6,0,0">
@@ -124,21 +149,26 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <ComboBox x:Name="SensorCombo" PlaceholderText="Sensor" />
-                                <ComboBox Grid.Column="1" x:Name="StateCombo" SelectedIndex="0">
-                                    <ComboBoxItem Content="OCUPADO (1)" Tag="1" />
-                                    <ComboBoxItem Content="LIBRE (0)" Tag="0" />
+                                <ComboBox ItemsSource="{x:Bind ViewModel.SensorIds, Mode=OneWay}"
+                                          SelectedItem="{x:Bind ViewModel.SelectedSensorId, Mode=TwoWay}"
+                                          PlaceholderText="Sensor" />
+                                <ComboBox Grid.Column="1"
+                                          SelectedIndex="0"
+                                          SelectionChanged="OnStateSelectionChanged">
+                                    <ComboBoxItem x:Uid="HardwareSensorStateOccupied" Tag="1" />
+                                    <ComboBoxItem x:Uid="HardwareSensorStateFree" Tag="0" />
                                 </ComboBox>
-                                <Button Grid.Column="2" x:Name="EmitBtn" Click="OnEmitClick"
-                                        Style="{StaticResource AccentButtonStyle}"
-                                        Content="Publicar" />
+                                <Button Grid.Column="2"
+                                        x:Uid="HardwarePublishButton"
+                                        Command="{x:Bind ViewModel.EmitReadingCommand}"
+                                        Style="{StaticResource AccentButtonStyle}" />
                             </Grid>
                             <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,8,0,0">
-                                <Button Click="OnSimEntryIrClick">
-                                    <TextBlock Text="Simular IR entrada" />
+                                <Button Command="{x:Bind ViewModel.SimEntryIrCommand}">
+                                    <TextBlock x:Uid="HardwareSimEntryButton" />
                                 </Button>
-                                <Button Click="OnSimExitIrClick">
-                                    <TextBlock Text="Simular IR salida" />
+                                <Button Command="{x:Bind ViewModel.SimExitIrCommand}">
+                                    <TextBlock x:Uid="HardwareSimExitButton" />
                                 </Button>
                             </StackPanel>
                         </StackPanel>
@@ -151,15 +181,17 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Archivo de log de hoy" Style="{StaticResource CardTitleTextStyle}" />
-                                <Button Grid.Column="1" Click="OnLoadFileLogClick">
+                                <TextBlock x:Uid="HardwareFileLogCardTitle" Style="{StaticResource CardTitleTextStyle}" />
+                                <Button Grid.Column="1" Command="{x:Bind ViewModel.LoadFileLogCommand}">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="" FontSize="12" />
-                                        <TextBlock Text="Cargar" />
+                                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph=""
+                                                  AutomationProperties.Name="Cargar"
+                                                  FontSize="12" />
+                                        <TextBlock x:Uid="HardwareLoadFileButton" />
                                     </StackPanel>
                                 </Button>
                             </Grid>
-                            <TextBlock x:Name="LogFilePath"
+                            <TextBlock Text="{x:Bind ViewModel.LogFilePath, Mode=OneWay}"
                                        FontFamily="Cascadia Code, Consolas, monospace"
                                        FontSize="10"
                                        Foreground="{ThemeResource Tx3Brush}"
@@ -171,7 +203,7 @@
                                     Padding="8"
                                     Height="180">
                                 <ScrollViewer>
-                                    <TextBlock x:Name="LogFileText"
+                                    <TextBlock Text="{x:Bind ViewModel.LogFileText, Mode=OneWay}"
                                                FontFamily="Cascadia Code, Consolas, monospace"
                                                FontSize="10"
                                                Foreground="{ThemeResource Tx2Brush}" />

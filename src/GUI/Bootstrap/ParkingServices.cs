@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using SmartParkingLot.Application;
 using SmartParkingLot.Application.Display;
+using SmartParkingLot.Application.Hardware;
 using SmartParkingLot.Application.Handlers;
 using SmartParkingLot.Application.Infrastructure;
 using SmartParkingLot.Application.Logging;
@@ -21,6 +22,12 @@ namespace SmartParkingLot.Gui.Bootstrap;
 
 /// Headless mirror of ParkingLotApp.RunAsync — wires the full domain
 /// stack and exposes it to the GUI pages without a console loop.
+/// <remarks>
+/// DEPRECATED: Use <see cref="ServiceCollectionExtensions.BuildParkingServiceProviderAsync"/>
+/// and resolve services via App.Services. Kept only as a compatibility shim
+/// while pages are progressively migrated to ParkingServicesFacade.
+/// </remarks>
+[Obsolete("Use ServiceCollectionExtensions.BuildParkingServiceProviderAsync() and resolve services from App.Services. This class will be removed in a future iteration.")]
 public sealed class ParkingServices : IDisposable
 {
     public ParkingLot Lot { get; }
@@ -32,6 +39,7 @@ public sealed class ParkingServices : IDisposable
     public IReadOnlyDictionary<string, Sensor<SpotSensorReading>> SpotSensors { get; }
     public Sensor<GateSensorReading> GateSensor { get; }
     public ArduinoSerialBridge Bridge { get; }
+    public IHardwareStatus HardwareStatus { get; }
     public SerialCommandDispatcher Dispatcher { get; }
     public GuiLogger UiLogger { get; }
     public FileLogger FileLogger { get; }
@@ -47,6 +55,7 @@ public sealed class ParkingServices : IDisposable
         IReadOnlyDictionary<string, Sensor<SpotSensorReading>> spotSensors,
         Sensor<GateSensorReading> gateSensor,
         ArduinoSerialBridge bridge,
+        IHardwareStatus hardwareStatus,
         SerialCommandDispatcher dispatcher,
         GuiLogger uiLogger,
         FileLogger fileLogger,
@@ -61,6 +70,7 @@ public sealed class ParkingServices : IDisposable
         SpotSensors = spotSensors;
         GateSensor = gateSensor;
         Bridge = bridge;
+        HardwareStatus = hardwareStatus;
         Dispatcher = dispatcher;
         UiLogger = uiLogger;
         FileLogger = fileLogger;
@@ -105,6 +115,7 @@ public sealed class ParkingServices : IDisposable
         IEventPublisher bus = new InProcessEventBus();
 
         var bridge = new ArduinoSerialBridge(hwConfig.Port, hwConfig.BaudRate, bus, logger);
+        var hardwareStatus = new ArduinoHardwareStatus(bridge, hwConfig.Port);
         var dispatcher = new SerialCommandDispatcher(bridge, logger);
 
         var gateSensor = new Sensor<GateSensorReading>("SEN-GATE-01", "LPR", logger);
@@ -167,7 +178,7 @@ public sealed class ParkingServices : IDisposable
         display.ShowCapacity(lot.AvailableSpots, lot.TotalSpots);
 
         return new ParkingServices(lot, gateController, capacityService, alertService, repository, bus,
-            spotSensors, gateSensor, bridge, dispatcher, uiLogger, fileLogger, hwConfig);
+            spotSensors, gateSensor, bridge, hardwareStatus, dispatcher, uiLogger, fileLogger, hwConfig);
     }
 
     public void Dispose()
@@ -175,5 +186,6 @@ public sealed class ParkingServices : IDisposable
         try { Bridge.StopListening(); } catch { }
         Dispatcher.Dispose();
         Bridge.Dispose();
+        (HardwareStatus as IDisposable)?.Dispose();
     }
 }
