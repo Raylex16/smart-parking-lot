@@ -1,4 +1,4 @@
-namespace SmartParkingLot.Application.Hardware;
+namespace SmartParkingLot.Core.Interfaces;
 
 public interface IHardwareStatus
 {

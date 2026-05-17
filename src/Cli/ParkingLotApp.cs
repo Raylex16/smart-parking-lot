@@ -1,19 +1,13 @@
-using SmartParkingLot.Application;
+using Microsoft.Extensions.DependencyInjection;
+using SmartParkingLot.Application.Bootstrap;
 using SmartParkingLot.Application.Approvals;
-using SmartParkingLot.Application.Display;
-using SmartParkingLot.Application.Handlers;
-using SmartParkingLot.Application.Infrastructure;
+using SmartParkingLot.Application.Gates;
 using SmartParkingLot.Application.Logging;
-using SmartParkingLot.Application.Notifications;
-using SmartParkingLot.Application.Policies;
-using SmartParkingLot.Application.Recognition;
-using SmartParkingLot.Application.Services;
-using SmartParkingLot.Application.UseCases;
-using SmartParkingLot.Core;
-using SmartParkingLot.Core.Events;
+using SmartParkingLot.Application.Monitoring;
+using SmartParkingLot.Application.Observability;
+using SmartParkingLot.Application.Queries;
+using SmartParkingLot.Application.Sensors;
 using SmartParkingLot.Core.Interfaces;
-using SmartParkingLot.Hardware;
-using SmartParkingLot.Persistence;
 
 namespace SmartParkingLot.Cli;
 
@@ -21,112 +15,54 @@ public sealed class ParkingLotApp
 {
     public async Task RunAsync()
     {
-        var configPath = Path.Combine(AppContext.BaseDirectory, "hardware.json");
-        var hwConfig = HardwareConfig.Load(configPath);
+        var baseDir    = AppContext.BaseDirectory;
+        var configPath = Path.Combine(baseDir, "hardware.json");
+        var dbPath     = Path.Combine(baseDir, DB_FOLDER_NAME, DB_FILE_NAME);
+        var logsDir    = Path.Combine(baseDir, "logs");
 
-        var dbPath = Path.Combine(AppContext.BaseDirectory, DB_FOLDER_NAME, DB_FILE_NAME);
         Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
 
-        var logsDir = Path.Combine(AppContext.BaseDirectory, "logs");
         var consoleLogger = new ConsoleLogger(LogLevel.Info);
-        var fileLogger = new FileLogger(logsDir, LogLevel.Debug);
-        ILogger logger = new CompositeLogger(consoleLogger, fileLogger);
+        var fileLogger    = new FileLogger(logsDir, LogLevel.Debug);
+        ILogger logger    = new CompositeLogger(consoleLogger, fileLogger);
 
-        var connectionString = $"Data Source={dbPath};";
+        var opts = new ApplicationOptions(
+            ConfigPath:            configPath,
+            ConnectionString:      $"Data Source={dbPath};",
+            LogsDir:               logsDir,
+            LotId:                 DEFAULT_LOT_ID,
+            EntryGateId:           ENTRY_GATE_ID,
+            ExitGateId:            EXIT_GATE_ID,
+            EntryGatePin:          ENTRY_GATE_PIN,
+            ExitGatePin:           EXIT_GATE_PIN,
+            EntryGateActuatorId:   ENTRY_GATE_ACTUATOR_ID,
+            ExitGateActuatorId:    EXIT_GATE_ACTUATOR_ID,
+            StartBridgeSafe:       false);
 
-        var initializer = new DatabaseInitializer(connectionString, logger);
-        await initializer.InitializeAsync();
+        var bootstrap = await ApplicationModule.BootstrapAsync(opts, logger);
 
-        IParkingRepository repository = new SqliteParkingRepository(connectionString);
+        var services = new ServiceCollection();
+        services.AddSingleton(consoleLogger);
+        services.AddSingleton(fileLogger);
+        services.AddSingleton<ILogger>(logger);
+        services.AddSmartParkingApplicationServices(bootstrap, opts, mockMode: bootstrap.HwConfig.Port == "MOCK");
 
-        foreach (var mapping in hwConfig.Sensors)
-            await repository.EnsureSpotExistsAsync(
-                mapping.SpotId, DEFAULT_LOT_ID,
-                mapping.Address, mapping.Type, mapping.Floor);
+        var provider = services.BuildServiceProvider();
 
-        var validSpotIds = hwConfig.Sensors.Select(m => m.SpotId).ToList();
-        var removed = await repository.RemoveOrphanSpotsAsync(DEFAULT_LOT_ID, validSpotIds);
-        if (removed > 0)
-            logger.Info("ParkingLotApp", $"Eliminados {removed} spot(s) huérfanos no presentes en hardware.json");
+        await provider.GetRequiredService<IApplicationStartup>().StartAsync();
 
-        var lot = await repository.GetParkingLotByIdAsync(DEFAULT_LOT_ID);
-        if (lot is null)
-        {
-            logger.Error("ParkingLotApp", $"No se encontró el parqueadero '{DEFAULT_LOT_ID}' en la BD.");
-            return;
-        }
+        var menu = new ConsoleMenu(
+            provider.GetRequiredService<ILotSnapshotStream>(),
+            provider.GetRequiredService<IGetSpotRowsQuery>(),
+            provider.GetRequiredService<IGetSensorReadingsQuery>(),
+            provider.GetRequiredService<IManualSensorService>(),
+            provider.GetRequiredService<IGateOperationsService>(),
+            provider.GetRequiredService<IApprovalDecisionService>(),
+            provider.GetRequiredService<IArduinoMonitoringService>(),
+            provider.GetRequiredService<IParkingModeService>(),
+            provider.GetRequiredService<ILogQueryService>(),
+            consoleLogger);
 
-        IEventPublisher bus = new InProcessEventBus();
-
-        using var bridge = new ArduinoSerialBridge(hwConfig.Port, hwConfig.BaudRate, bus, logger);
-        using var dispatcher = new SerialCommandDispatcher(bridge, logger);
-
-        var gateSensor = new Sensor<GateSensorReading>("SEN-GATE-01", "LPR", logger);
-
-        var spotSensors = new Dictionary<string, Sensor<SpotSensorReading>>();
-        foreach (var s in lot.GetSpots())
-        {
-            spotSensors[s.Id] = new Sensor<SpotSensorReading>($"SEN-SPOT-{s.Id}", "Ultrasonido", logger);
-        }
-
-        var sensorToSpot = new Dictionary<string, string>(hwConfig.BuildSensorToSpot());
-        foreach (var s in spotSensors.Values)
-            sensorToSpot[s.Id] = s.Id.Replace("SEN-SPOT-", "");
-
-        var handleReading = new HandleSensorReadingUseCase(lot, sensorToSpot);
-        bus.Subscribe<SensorReadingReceived>(handleReading.Handle);
-
-        var spotToActuator = hwConfig.BuildSpotToActuator();
-        var occupancyHandler = new SpotOccupancyChangedHandler(dispatcher, spotToActuator);
-
-        foreach (var spot in lot.GetSpots())
-            spot.OccupancyChanged += occupancyHandler.Handle;
-
-        foreach (var spot in lot.GetSpots())
-        {
-            spot.OccupancyChanged += evt =>
-            {
-                _ = repository.UpdateSpotStatusAsync(evt.SpotId, evt.IsOccupied);
-            };
-        }
-
-        ICapacityService capacityService = new CapacityService(lot, logger);
-        IAlertService alertService = new AlertService(logger, repository);
-
-        IApprovalQueue approvalQueue = new InMemoryApprovalQueue();
-        IApprovalNotifier approvalNotifier = new BeepApprovalNotifier();
-        approvalQueue.Enqueued += approvalNotifier.Notify;
-
-        var manualTimeout = TimeSpan.FromSeconds(hwConfig.ManualApprovalTimeoutSeconds);
-
-        Func<ParkingMode, IAccessPolicy> policyFactory = mode => mode switch
-        {
-            ParkingMode.MANUAL    => new ManualAccessPolicy(approvalQueue, logger, manualTimeout),
-            ParkingMode.AUTOMATIC => new AlwaysAllowPolicy(),
-            _                     => new AlwaysAllowPolicy()
-        };
-
-        var switchablePolicy = new SwitchableAccessPolicy(policyFactory(lot.Mode));
-        IParkingModeService modeService = new ParkingModeService(lot, switchablePolicy, repository, logger, policyFactory);
-
-        var gateController = new GateController(capacityService, alertService, switchablePolicy, logger);
-
-        gateController.RegisterGate(ENTRY_GATE_ID, new Gate(ENTRY_GATE_ID, GateType.ENTRY, ENTRY_GATE_PIN, ENTRY_GATE_ACTUATOR_ID, dispatcher, logger));
-        gateController.RegisterGate(EXIT_GATE_ID, new Gate(EXIT_GATE_ID, GateType.EXIT, EXIT_GATE_PIN, EXIT_GATE_ACTUATOR_ID, dispatcher, logger));
-
-        IDisplay display = new LcdDisplay(dispatcher);
-        var lcdCapacityHandler = new LcdCapacityHandler(lot, display);
-        foreach (var spot in lot.GetSpots())
-            spot.OccupancyChanged += lcdCapacityHandler.Handle;
-
-        ILicensePlateRecognizer plateRecognizer = new PlaceholderPlateRecognizer();
-        var gateSensorHandler = new GateSensorHandler(gateController, plateRecognizer, display, logger, hwConfig.BuildGateSensorMapping());
-        bus.SubscribeAsync<SensorReadingReceived>(gateSensorHandler.HandleAsync, logger, "GateSensorHandler");
-
-        bridge.StartListening();
-        display.ShowCapacity(lot.AvailableSpots, lot.TotalSpots);
-
-        var menu = new ConsoleMenu(lot, repository, bus, spotSensors, gateSensor, bridge, modeService, approvalQueue, consoleLogger, fileLogger);
         await menu.RunAsync();
     }
 }

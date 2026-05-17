@@ -1,4 +1,4 @@
-using SmartParkingLot.Application.Hardware;
+using SmartParkingLot.Core.Interfaces;
 
 namespace SmartParkingLot.Hardware;
 

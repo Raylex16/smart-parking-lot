@@ -48,12 +48,23 @@ public sealed class GetLotSnapshotQuery : IGetLotSnapshotQuery
         // Parse lot.Id as Guid; fall back to Guid.Empty if not a valid Guid
         var lotGuid = Guid.TryParse(lot.Id, out var parsed) ? parsed : Guid.Empty;
 
+        var spotRows = spots
+            .Select(s => new SpotRowDto(
+                Id: s.Id,
+                Zone: s.Address,
+                Type: s.Type,
+                Address: s.Address,
+                IsOccupied: s.IsOccupied,
+                Floor: int.TryParse(s.Floor, out var f) ? f : 0))
+            .ToList();
+
         return new LotSnapshotDto(
             Id: lotGuid,
             Name: lot.Name,
             TotalSpots: spots.Count,
             OccupiedSpots: spots.Count(s => s.IsOccupied),
             ZoneSummaries: zoneSummaries,
-            Gates: gates);
+            Gates: gates,
+            Spots: spotRows);
     }
 }

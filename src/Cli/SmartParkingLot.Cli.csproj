@@ -10,13 +10,11 @@
 
   <ItemGroup>
     <PackageReference Include="Spectre.Console" Version="0.49.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Core\SmartParkingLot.Core.csproj" />
     <ProjectReference Include="..\Application\SmartParkingLot.Application.csproj" />
-    <ProjectReference Include="..\Hardware\SmartParkingLot.Hardware.csproj" />
-    <ProjectReference Include="..\Persistence\SmartParkingLot.Persistence.csproj" />
   </ItemGroup>
 
   <ItemGroup>

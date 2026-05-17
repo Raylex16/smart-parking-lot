@@ -1,17 +1,14 @@
 using System.Collections.ObjectModel;
-using System.IO;
-using System.IO.Ports;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SmartParkingLot.Application.Hardware;
-using SmartParkingLot.Application.Logging;
-using SmartParkingLot.Core;
-using SmartParkingLot.Core.Events;
-using SmartParkingLot.Core.Interfaces;
+using SmartParkingLot.Application.Monitoring;
+using SmartParkingLot.Application.Queries;
+using SmartParkingLot.Application.Sensors;
+using SmartParkingLot.Core.Interfaces;  // IHardwareStatus, LogLevel
 using SmartParkingLot.Gui.Bootstrap;
 using SmartParkingLot.Gui.Infrastructure;
 using SmartParkingLot.Gui.Resources;
-using SmartParkingLot.Hardware;
 
 namespace SmartParkingLot.Gui.ViewModels;
 
@@ -20,20 +17,18 @@ public partial class HardwarePageViewModel : ObservableObject
     private const int FILE_LOG_TAIL_LINES = 80;
 
     private readonly IHardwareStatus _hardwareStatus;
-    private readonly IEventPublisher _bus;
+    private readonly IArduinoMonitoringService _monitoring;
+    private readonly IHardwareConfigurationService _hwConfig;
+    private readonly ILogQueryService _logQuery;
+    private readonly IManualSensorService _manualSensor;
     private readonly GuiLogger _uiLogger;
-    private readonly FileLogger _fileLogger;
-    private readonly ArduinoSerialBridge _bridge;
-    private readonly HardwareConfig _config;
-    private readonly IReadOnlyDictionary<string, Sensor<SpotSensorReading>> _spotSensors;
-    private readonly Sensor<GateSensorReading> _gateSensor;
     private readonly IUiThreadDispatcher _ui;
 
     private Action<LogEntry>? _logHandler;
 
     [ObservableProperty] private bool _isConnected;
     [ObservableProperty] private string _connectionLabel = "Desconectado";
-    [ObservableProperty] private string _connectButtonGlyph = "";  // plug icon
+    [ObservableProperty] private string _connectButtonGlyph = "";
     [ObservableProperty] private string _connectButtonLabel = "Conectar";
     [ObservableProperty] private string _configPort = "";
     [ObservableProperty] private string _configBaudRate = "";
@@ -49,35 +44,31 @@ public partial class HardwarePageViewModel : ObservableObject
 
     public HardwarePageViewModel(
         IHardwareStatus hardwareStatus,
-        IEventPublisher bus,
+        IArduinoMonitoringService monitoring,
+        IHardwareConfigurationService hwConfig,
+        ILogQueryService logQuery,
+        IManualSensorService manualSensor,
         GuiLogger uiLogger,
-        FileLogger fileLogger,
-        ArduinoSerialBridge bridge,
-        HardwareConfig config,
-        IReadOnlyDictionary<string, Sensor<SpotSensorReading>> spotSensors,
-        Sensor<GateSensorReading> gateSensor,
         IUiThreadDispatcher ui)
     {
-        _hardwareStatus  = hardwareStatus;
-        _bus             = bus;
-        _uiLogger        = uiLogger;
-        _fileLogger      = fileLogger;
-        _bridge          = bridge;
-        _config          = config;
-        _spotSensors     = spotSensors;
-        _gateSensor      = gateSensor;
-        _ui              = ui;
+        _hardwareStatus = hardwareStatus;
+        _monitoring     = monitoring;
+        _hwConfig       = hwConfig;
+        _logQuery       = logQuery;
+        _manualSensor   = manualSensor;
+        _uiLogger       = uiLogger;
+        _ui             = ui;
     }
 
     public void Activate()
     {
-        ConfigPort     = _config.Port;
-        ConfigBaudRate = _config.BaudRate.ToString();
+        var snapshot = _hwConfig.GetSnapshot();
+        ConfigPort     = snapshot.Port;
+        ConfigBaudRate = snapshot.BaudRate.ToString();
 
         SensorIds.Clear();
-        SensorIds.Add(_gateSensor.Id);
-        foreach (var s in _spotSensors.Values)
-            SensorIds.Add(s.Id);
+        foreach (var id in _manualSensor.SensorIds)
+            SensorIds.Add(id);
         if (SensorIds.Count > 0)
             SelectedSensorId = SensorIds[0];
 
@@ -98,10 +89,10 @@ public partial class HardwarePageViewModel : ObservableObject
 
     private void RefreshConnectionState()
     {
-        IsConnected        = _bridge.IsListening;
-        ConnectionLabel    = _bridge.IsListening ? "Conectado" : "Desconectado";
-        ConnectButtonGlyph = _bridge.IsListening ? "" : "";
-        ConnectButtonLabel = _bridge.IsListening ? "Desconectar" : "Conectar";
+        IsConnected        = _monitoring.IsRunning;
+        ConnectionLabel    = _monitoring.IsRunning ? "Conectado" : "Desconectado";
+        ConnectButtonGlyph = _monitoring.IsRunning ? "" : "";
+        ConnectButtonLabel = _monitoring.IsRunning ? "Desconectar" : "Conectar";
     }
 
     [RelayCommand]
@@ -109,10 +100,10 @@ public partial class HardwarePageViewModel : ObservableObject
     {
         try
         {
-            if (_bridge.IsListening)
-                _bridge.StopListening();
+            if (_monitoring.IsRunning)
+                _monitoring.Stop();
             else
-                _bridge.StartListening();
+                _monitoring.Start();
         }
         catch (Exception ex)
         {
@@ -124,17 +115,10 @@ public partial class HardwarePageViewModel : ObservableObject
     [RelayCommand]
     private void ScanPorts()
     {
-        try
-        {
-            var ports = SerialPort.GetPortNames().OrderBy(p => p).ToArray();
-            PortsListText = ports.Length == 0
-                ? "Sin puertos seriales detectados."
-                : "Puertos disponibles: " + string.Join(", ", ports);
-        }
-        catch (Exception ex)
-        {
-            PortsListText = $"Error: {ex.Message}";
-        }
+        var available = new AvailableSerialPortsQuery().ListPorts();
+        PortsListText = available.Count == 0
+            ? "Sin puertos seriales detectados."
+            : "Puertos disponibles: " + string.Join(", ", available);
     }
 
     [RelayCommand]
@@ -143,30 +127,13 @@ public partial class HardwarePageViewModel : ObservableObject
     [RelayCommand]
     private void LoadFileLog()
     {
-        var path = _fileLogger.GetCurrentLogFilePath();
+        var path = _logQuery.GetCurrentLogFilePath();
         LogFilePath = path;
 
-        if (!File.Exists(path))
+        var tail = _logQuery.TailLogFile(FILE_LOG_TAIL_LINES);
+        if (tail.Count == 0)
         {
             LogFileText = "No hay archivo de log para hoy.";
-            return;
-        }
-
-        var tail = new Queue<string>(FILE_LOG_TAIL_LINES);
-        try
-        {
-            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using var sr = new StreamReader(fs);
-            string? line;
-            while ((line = sr.ReadLine()) is not null)
-            {
-                if (tail.Count == FILE_LOG_TAIL_LINES) tail.Dequeue();
-                tail.Enqueue(line);
-            }
-        }
-        catch (Exception ex)
-        {
-            LogFileText = $"Error leyendo log: {ex.Message}";
             return;
         }
 
@@ -174,29 +141,32 @@ public partial class HardwarePageViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void EmitReading()
+    private async Task EmitReading()
     {
         if (string.IsNullOrEmpty(SelectedSensorId)) return;
-        var type = SelectedSensorId.StartsWith("SEN-SPOT-") ? "Ultrasonido" : "LPR";
-        _bus.Publish(new SensorReadingReceived(
-            SensorId:   SelectedSensorId,
-            SensorType: type,
-            RawValue:   SelectedStateValue,
-            Timestamp:  DateTimeOffset.Now));
+        var spotId = SelectedSensorId.StartsWith("SEN-SPOT-")
+            ? SelectedSensorId.Replace("SEN-SPOT-", "")
+            : null;
+
+        if (spotId is not null)
+        {
+            var occupied = SelectedStateValue == "1";
+            await _manualSensor.RecordSpotReadingAsync(spotId, occupied);
+        }
         _uiLogger.Log(LogLevel.Info, "Manual", $"Publicado: {SelectedSensorId} = {SelectedStateValue}");
     }
 
     [RelayCommand]
-    private void SimEntryIr()
+    private async Task SimEntryIr()
     {
-        _bus.Publish(new SensorReadingReceived("GATE-IR1", "IR", "1", DateTimeOffset.Now));
+        await _manualSensor.TriggerGateIrAsync(GuiConstants.ENTRY_GATE_ID);
         _uiLogger.Log(LogLevel.Info, "Manual", "Simulado: GATE-IR1 = 1");
     }
 
     [RelayCommand]
-    private void SimExitIr()
+    private async Task SimExitIr()
     {
-        _bus.Publish(new SensorReadingReceived("GATE-IR2", "IR", "1", DateTimeOffset.Now));
+        await _manualSensor.TriggerGateIrAsync(GuiConstants.EXIT_GATE_ID);
         _uiLogger.Log(LogLevel.Info, "Manual", "Simulado: GATE-IR2 = 1");
     }
 

@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Core\SmartParkingLot.Core.csproj" />
-    <ProjectReference Include="..\Application\SmartParkingLot.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

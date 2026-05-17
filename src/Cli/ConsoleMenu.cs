@@ -1,10 +1,12 @@
-using SmartParkingLot.Application;
+using SmartParkingLot.Application.Approvals;
+using SmartParkingLot.Application.Gates;
 using SmartParkingLot.Application.Logging;
+using SmartParkingLot.Application.Monitoring;
+using SmartParkingLot.Application.Observability;
+using SmartParkingLot.Application.Queries;
+using SmartParkingLot.Application.Sensors;
 using SmartParkingLot.Core;
-using SmartParkingLot.Core.Approvals;
-using SmartParkingLot.Core.Events;
 using SmartParkingLot.Core.Interfaces;
-using SmartParkingLot.Hardware;
 using Spectre.Console;
 
 namespace SmartParkingLot.Cli;
@@ -23,39 +25,39 @@ public class ConsoleMenu
     private const string OPT_APPROVALS = "Aprobaciones pendientes";
     private const string OPT_QUIT      = "Salir";
 
-    private readonly ParkingLot _lot;
-    private readonly IParkingRepository _repository;
-    private readonly IEventPublisher _bus;
-    private readonly Dictionary<string, Sensor<SpotSensorReading>> _spotSensors;
-    private readonly Sensor<GateSensorReading> _gateSensor;
-    private readonly IArduinoReader _bridge;
+    private readonly ILotSnapshotStream _stream;
+    private readonly IGetSpotRowsQuery _spotRowsQuery;
+    private readonly IGetSensorReadingsQuery _sensorReadingsQuery;
+    private readonly IManualSensorService _manualSensor;
+    private readonly IGateOperationsService _gateOperations;
+    private readonly IApprovalDecisionService _approvalDecisions;
+    private readonly IArduinoMonitoringService _monitoring;
     private readonly IParkingModeService _modeService;
-    private readonly IApprovalQueue _approvalQueue;
+    private readonly ILogQueryService _logQuery;
     private readonly ConsoleLogger _consoleLogger;
-    private readonly FileLogger _fileLogger;
 
     public ConsoleMenu(
-        ParkingLot lot,
-        IParkingRepository repository,
-        IEventPublisher bus,
-        Dictionary<string, Sensor<SpotSensorReading>> spotSensors,
-        Sensor<GateSensorReading> gateSensor,
-        IArduinoReader bridge,
+        ILotSnapshotStream stream,
+        IGetSpotRowsQuery spotRowsQuery,
+        IGetSensorReadingsQuery sensorReadingsQuery,
+        IManualSensorService manualSensor,
+        IGateOperationsService gateOperations,
+        IApprovalDecisionService approvalDecisions,
+        IArduinoMonitoringService monitoring,
         IParkingModeService modeService,
-        IApprovalQueue approvalQueue,
-        ConsoleLogger consoleLogger,
-        FileLogger fileLogger)
+        ILogQueryService logQuery,
+        ConsoleLogger consoleLogger)
     {
-        _lot = lot;
-        _repository = repository;
-        _bus = bus;
-        _spotSensors = spotSensors;
-        _gateSensor = gateSensor;
-        _bridge = bridge;
-        _modeService = modeService;
-        _approvalQueue = approvalQueue;
-        _consoleLogger = consoleLogger;
-        _fileLogger = fileLogger;
+        _stream            = stream;
+        _spotRowsQuery     = spotRowsQuery;
+        _sensorReadingsQuery = sensorReadingsQuery;
+        _manualSensor      = manualSensor;
+        _gateOperations    = gateOperations;
+        _approvalDecisions = approvalDecisions;
+        _monitoring        = monitoring;
+        _modeService       = modeService;
+        _logQuery          = logQuery;
+        _consoleLogger     = consoleLogger;
     }
 
     public async Task RunAsync()
@@ -69,7 +71,7 @@ public class ConsoleMenu
                 OPT_SIMULATE, OPT_SPOT, OPT_STATUS, OPT_SENSOR,
                 OPT_MONITOR, OPT_LOGS, OPT_MODE
             };
-            if (_lot.Mode == ParkingMode.MANUAL)
+            if (_modeService.Current == ParkingMode.MANUAL)
                 choices.Add(OPT_APPROVALS);
             choices.Add(OPT_QUIT);
 
@@ -92,14 +94,14 @@ public class ConsoleMenu
             {
                 switch (choice)
                 {
-                    case OPT_SIMULATE:  SimulateGateSensor();                 break;
-                    case OPT_SPOT:      await HandleManualSpotReadingAsync(); break;
-                    case OPT_STATUS:    await ShowParkingStatusAsync();       break;
-                    case OPT_SENSOR:    await ShowSensorReadingsAsync();      break;
-                    case OPT_MONITOR:   RunLiveMonitoring();                  break;
-                    case OPT_LOGS:      ShowRecentLogs();                     break;
-                    case OPT_MODE:      await HandleChangeModeAsync();        break;
-                    case OPT_APPROVALS: HandlePendingApprovals();             break;
+                    case OPT_SIMULATE:  await SimulateGateSensorAsync();       break;
+                    case OPT_SPOT:      await HandleManualSpotReadingAsync();   break;
+                    case OPT_STATUS:    await ShowParkingStatusAsync();         break;
+                    case OPT_SENSOR:    await ShowSensorReadingsAsync();        break;
+                    case OPT_MONITOR:   RunLiveMonitoring();                    break;
+                    case OPT_LOGS:      ShowRecentLogs();                       break;
+                    case OPT_MODE:      await HandleChangeModeAsync();          break;
+                    case OPT_APPROVALS: HandlePendingApprovals();               break;
                 }
             }
             catch (Exception ex)
@@ -117,11 +119,13 @@ public class ConsoleMenu
         AnsiConsole.Clear();
         AnsiConsole.Write(new Rule("[bold blue] Smart Parking Lot [/]").RuleStyle("blue dim"));
 
+        var snap = _stream.Current;
+        var available = snap.TotalSpots - snap.OccupiedSpots;
         var grid = new Grid().AddColumn().AddColumn().AddColumn();
         grid.AddRow(
-            $"[grey]Parqueadero:[/] [white]{_lot.Name.EscapeMarkup()}[/] [grey]({_lot.Id.EscapeMarkup()})[/]",
-            $"[grey]Modo:[/] [yellow]{_lot.Mode}[/]",
-            $"[grey]Disponibles:[/] [green]{_lot.AvailableSpots}[/][grey]/[/][white]{_lot.TotalSpots}[/]");
+            $"[grey]Parqueadero:[/] [white]{snap.Name.EscapeMarkup()}[/] [grey]({snap.Id})[/]",
+            $"[grey]Modo:[/] [yellow]{_modeService.Current}[/]",
+            $"[grey]Disponibles:[/] [green]{available}[/][grey]/[/][white]{snap.TotalSpots}[/]");
 
         AnsiConsole.Write(grid);
         AnsiConsole.WriteLine();
@@ -152,7 +156,7 @@ public class ConsoleMenu
     {
         AnsiConsole.Write(new Rule("[bold]Aprobaciones pendientes[/]").LeftJustified());
 
-        var pending = _approvalQueue.GetPending();
+        var pending = _approvalDecisions.GetPending();
 
         if (pending.Count == 0)
         {
@@ -211,26 +215,24 @@ public class ConsoleMenu
                 .Title($"Decisión para [yellow]{approval.Id.EscapeMarkup()}[/]:")
                 .AddChoices("Aprobar", "Denegar"));
 
-        if (decision == "Aprobar")
-        {
-            approval.Approve();
+        var approved = decision == "Aprobar";
+        _approvalDecisions.Resolve(approval.Id, approved);
+
+        if (approved)
             AnsiConsole.MarkupLine($"\n[bold green]✓[/] {approval.Id.EscapeMarkup()} → [green]APROBADA[/].");
-        }
         else
-        {
-            approval.Deny();
             AnsiConsole.MarkupLine($"\n[bold red]✗[/] {approval.Id.EscapeMarkup()} → [red]DENEGADA[/].");
-        }
     }
 
     private async Task HandleManualSpotReadingAsync()
     {
         AnsiConsole.Write(new Rule("[bold]Sensor manual de espacio[/]").LeftJustified());
 
+        var spots = _stream.Current.Spots;
         var spotsTable = new Table().Border(TableBorder.Rounded).Title("[grey]Espacios actuales[/]");
         spotsTable.AddColumn(new TableColumn("ID").Centered());
         spotsTable.AddColumn(new TableColumn("Estado").Centered());
-        foreach (var s in _lot.GetSpots())
+        foreach (var s in spots)
             spotsTable.AddRow(s.Id.EscapeMarkup(), s.IsOccupied ? "[red]OCUPADO[/]" : "[green]LIBRE[/]");
         AnsiConsole.Write(spotsTable);
 
@@ -240,25 +242,9 @@ public class ConsoleMenu
                     ? ValidationResult.Success()
                     : ValidationResult.Error("[red]El ID no puede estar vacío.[/]")));
 
-        if (!_spotSensors.TryGetValue(spotId, out var sensor))
-        {
-            AnsiConsole.MarkupLine($"[red]No hay sensor registrado para el espacio '{spotId.EscapeMarkup()}'.[/]");
-            return;
-        }
-
         var isOccupied = AnsiConsole.Confirm("¿Marcar como ocupado?");
 
-        var reading = new SpotSensorReading(spotId, isOccupied);
-        sensor.CaptureReading(reading);
-
-        var rawValue = isOccupied ? "1" : "0";
-        await _repository.LogSensorReadingAsync(sensor.Id, rawValue, DateTime.Now);
-
-        _bus.Publish(new SensorReadingReceived(
-            SensorId: sensor.Id,
-            SensorType: sensor.GetSensorType(),
-            RawValue: rawValue,
-            Timestamp: DateTimeOffset.Now));
+        await _manualSensor.RecordSpotReadingAsync(spotId, isOccupied);
 
         var stateLabel = isOccupied ? "[red]OCUPADO[/]" : "[green]LIBRE[/]";
         AnsiConsole.MarkupLine($"\n[bold green]✓[/] Evento publicado — Espacio '[yellow]{spotId.EscapeMarkup()}[/]' → {stateLabel}.");
@@ -268,7 +254,9 @@ public class ConsoleMenu
     {
         AnsiConsole.Write(new Rule("[bold]Estado del parqueadero[/]").LeftJustified());
 
-        var spots = (await _repository.GetSpotsByLotIdAsync(_lot.Id)).ToList();
+        var snap  = _stream.Current;
+        var lotId = snap.Id;
+        var spots = (await _spotRowsQuery.ExecuteAsync(lotId)).ToList();
 
         if (spots.Count == 0)
         {
@@ -278,7 +266,7 @@ public class ConsoleMenu
 
         var table = new Table()
             .Border(TableBorder.Rounded)
-            .Title($"[bold]{_lot.Name.EscapeMarkup()}[/] [grey]({_lot.Id.EscapeMarkup()})[/]");
+            .Title($"[bold]{snap.Name.EscapeMarkup()}[/] [grey]({snap.Id})[/]");
 
         table.AddColumn(new TableColumn("ID").Centered());
         table.AddColumn("Dirección");
@@ -292,22 +280,19 @@ public class ConsoleMenu
 
         var occupied = spots.Count(s => s.IsOccupied);
         AnsiConsole.MarkupLine($"\n[grey]Total:[/] {spots.Count} | [red]Ocupados:[/] {occupied} | [green]Libres:[/] {spots.Count - occupied}");
-        AnsiConsole.MarkupLine($"[grey]Memoria:[/] [green]{_lot.AvailableSpots}[/] [grey]disponibles de[/] [white]{_lot.TotalSpots}[/]");
+        AnsiConsole.MarkupLine($"[grey]Memoria:[/] [green]{snap.TotalSpots - snap.OccupiedSpots}[/] [grey]disponibles de[/] [white]{snap.TotalSpots}[/]");
     }
 
     private async Task ShowSensorReadingsAsync()
     {
         AnsiConsole.Write(new Rule("[bold]Lecturas de sensor[/]").LeftJustified());
 
-        var choices = new List<string> { _gateSensor.Id };
-        choices.AddRange(_spotSensors.Values.Select(s => s.Id));
-
         var sensorId = AnsiConsole.Prompt(
             new SelectionPrompt<string>()
                 .Title("[green]?[/] Seleccione un sensor:")
-                .AddChoices(choices));
+                .AddChoices(_manualSensor.SensorIds));
 
-        var readings = (await _repository.GetSensorReadingsAsync(sensorId)).ToList();
+        var readings = (await _sensorReadingsQuery.ExecuteAsync(sensorId)).ToList();
 
         if (readings.Count == 0)
         {
@@ -334,10 +319,10 @@ public class ConsoleMenu
         AnsiConsole.Write(new Rule("[bold]Monitoreo en tiempo real[/]").LeftJustified());
         AnsiConsole.MarkupLine("[grey]Los logs de Arduino se mostrarán ahora. Presione cualquier tecla para salir.[/]\n");
 
-        if (!_bridge.IsListening)
-            _bridge.StartListening();
+        if (!_monitoring.IsRunning)
+            _monitoring.Start();
 
-        if (!_bridge.IsListening)
+        if (!_monitoring.IsRunning)
         {
             AnsiConsole.MarkupLine("[yellow]Arduino no disponible.[/]");
             return;
@@ -354,50 +339,33 @@ public class ConsoleMenu
         AnsiConsole.MarkupLine("\n[grey]Monitoreo detenido.[/]");
     }
 
-    private void SimulateGateSensor()
+    private async Task SimulateGateSensorAsync()
     {
         AnsiConsole.Write(new Rule("[bold]Simular sensor de puerta (IR)[/]").LeftJustified());
+
+        var gates = _gateOperations.GetRegisteredGates();
+        var gateChoices = gates.Select(g => g.GateId).ToList();
 
         var gateId = AnsiConsole.Prompt(
             new SelectionPrompt<string>()
                 .Title("[green]?[/] Seleccione la puerta:")
-                .AddChoices(ENTRY_GATE_ID, EXIT_GATE_ID));
+                .AddChoices(gateChoices));
 
-        var irSensorId = gateId switch
-        {
-            ENTRY_GATE_ID => "GATE-IR1",
-            EXIT_GATE_ID  => "GATE-IR2",
-            _ => null
-        };
-
-        _bus.Publish(new SensorReadingReceived(
-            SensorId: irSensorId!,
-            SensorType: "IR",
-            RawValue: "1",
-            Timestamp: DateTimeOffset.Now));
-
-        AnsiConsole.MarkupLine($"\n[bold green]✓[/] Evento publicado: [yellow]{irSensorId!.EscapeMarkup()}[/] → 1");
+        await _manualSensor.TriggerGateIrAsync(gateId);
+        AnsiConsole.MarkupLine($"\n[bold green]✓[/] Evento IR publicado para puerta [yellow]{gateId.EscapeMarkup()}[/].");
     }
 
-    // TODO: a futuro permitir seleccionar fecha o rango de fechas para mostrar logs históricos.
     private void ShowRecentLogs()
     {
         AnsiConsole.Write(new Rule("[bold]Logs recientes[/]").LeftJustified());
 
-        var path = _fileLogger.GetCurrentLogFilePath();
+        var path = _logQuery.GetCurrentLogFilePath();
+        var tail = _logQuery.TailLogFile(RECENT_LOG_LINES);
 
-        if (!File.Exists(path))
+        if (tail.Count == 0)
         {
             AnsiConsole.MarkupLine($"[yellow]No hay archivo de log para hoy ({Path.GetFileName(path).EscapeMarkup()}).[/]");
             return;
-        }
-
-        var tail = new Queue<string>(RECENT_LOG_LINES);
-        foreach (var line in File.ReadLines(path))
-        {
-            if (tail.Count == RECENT_LOG_LINES)
-                tail.Dequeue();
-            tail.Enqueue(line);
         }
 
         AnsiConsole.MarkupLine($"[grey]Últimas {tail.Count} línea(s) de '[/][white]{Path.GetFileName(path).EscapeMarkup()}[/][grey]':[/]\n");

@@ -7,10 +7,11 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using SmartParkingLot.Core;
+using SmartParkingLot.Core.Interfaces;
+using SmartParkingLot.Application.Observability;
+using SmartParkingLot.Application.Queries;
 using SmartParkingLot.Gui.Bootstrap;
 using SmartParkingLot.Gui.Pages;
-using SmartParkingLot.Application.Hardware;
 using SmartParkingLot.Gui.Resources;
 using WinRT.Interop;
 
@@ -22,6 +23,7 @@ public sealed partial class MainWindow : Window
     private readonly DispatcherQueueTimer _clockTimer;
     private bool _servicesReady;
     private IHardwareStatus? _status;
+    private ILotSnapshotStream? _lotStream;
 
     public MainWindow()
     {
@@ -53,10 +55,11 @@ public sealed partial class MainWindow : Window
         _status = App.Services.GetRequiredService<IHardwareStatus>();
         _status.Changed += (_, _) => _ui.TryEnqueue(UpdateArduinoStatus);
 
-        var lot = App.Services.GetRequiredService<ParkingLot>();
+        _lotStream = App.Services.GetRequiredService<ILotSnapshotStream>();
+        _lotStream.SnapshotChanged += (_, snap) => _ui.TryEnqueue(() => UpdateOccupancyFromSnapshot(snap));
 
-        LotNameText.Text = lot.Name;
-        UpdateOccupancyStatus();
+        LotNameText.Text = _lotStream.Current.Name;
+        UpdateOccupancyFromSnapshot(_lotStream.Current);
         UpdateArduinoStatus();
 
         foreach (var item in Nav.MenuItems)
@@ -67,9 +70,6 @@ public sealed partial class MainWindow : Window
                 break;
             }
         }
-
-        foreach (var spot in lot.GetSpots())
-            spot.OccupancyChanged += _ => _ui.TryEnqueue(UpdateOccupancyStatus);
     }
 
     private void Nav_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -94,12 +94,11 @@ public sealed partial class MainWindow : Window
         };
     }
 
-    private void UpdateOccupancyStatus()
+    private void UpdateOccupancyFromSnapshot(LotSnapshotDto snap)
     {
         if (!_servicesReady) return;
-        var lot = App.Services.GetRequiredService<ParkingLot>();
-        var occ = lot.TotalSpots - lot.AvailableSpots;
-        var tot = lot.TotalSpots;
+        var occ = snap.OccupiedSpots;
+        var tot = snap.TotalSpots;
         var pct = tot == 0 ? 0 : (int)Math.Round(100.0 * occ / tot);
         OccupancyStatusText.Text = $"{occ}/{tot} spots · {pct}% ocupado";
         LotStatusText.Text = $"{occ}/{tot} spots";

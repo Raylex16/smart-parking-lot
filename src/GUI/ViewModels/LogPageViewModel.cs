@@ -2,13 +2,13 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml;
-using SmartParkingLot.Core.Interfaces;
+using SmartParkingLot.Application.Queries;
 
 namespace SmartParkingLot.Gui.ViewModels;
 
 public partial class LogPageViewModel : ObservableObject
 {
-    private readonly IParkingRepository _repository;
+    private readonly ILogQueryService _logQuery;
 
     [ObservableProperty] private string _headerSubtitle = "Selecciona un tipo e ingresa un filtro.";
     [ObservableProperty] private string _queryText = "";
@@ -22,9 +22,9 @@ public partial class LogPageViewModel : ObservableObject
 
     public ObservableCollection<LogRowVm> Results { get; } = new();
 
-    public LogPageViewModel(IParkingRepository repository)
+    public LogPageViewModel(ILogQueryService logQuery)
     {
-        _repository = repository;
+        _logQuery = logQuery;
     }
 
     public void Activate() { }
@@ -44,7 +44,7 @@ public partial class LogPageViewModel : ObservableObject
                     HeaderSubtitle = "Ingrese una placa para ver su historial.";
                     break;
                 }
-                var hist = (await _repository.GetRequestHistoryAsync(key)).ToList();
+                var hist = (await _logQuery.GetRequestHistoryAsync(key)).ToList();
                 HeaderSubtitle = $"{hist.Count} solicitud(es) para placa {key}";
                 foreach (var r in hist)
                     Results.Add(new LogRowVm
@@ -63,7 +63,7 @@ public partial class LogPageViewModel : ObservableObject
                     HeaderSubtitle = "Ingrese un sensorId.";
                     break;
                 }
-                var readings = (await _repository.GetSensorReadingsAsync(key)).ToList();
+                var readings = (await _logQuery.GetSensorReadingsAsync(key)).ToList();
                 HeaderSubtitle = $"{readings.Count} lectura(s) para {key}";
                 foreach (var r in readings)
                     Results.Add(new LogRowVm
@@ -82,7 +82,7 @@ public partial class LogPageViewModel : ObservableObject
                     HeaderSubtitle = "Ingrese un deviceId (ej: GATE-G-01).";
                     break;
                 }
-                var actions = (await _repository.GetDeviceActionsAsync(key)).ToList();
+                var actions = (await _logQuery.GetDeviceActionsAsync(key)).ToList();
                 HeaderSubtitle = $"{actions.Count} acción(es) para {key}";
                 foreach (var a in actions)
                     Results.Add(new LogRowVm

@@ -1,15 +1,15 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using SmartParkingLot.Core;
-using SmartParkingLot.Core.Interfaces;
+using SmartParkingLot.Application.Observability;
+using SmartParkingLot.Application.Queries;
 
 namespace SmartParkingLot.Gui.ViewModels;
 
 public partial class AdminPageViewModel : ObservableObject
 {
-    private readonly IParkingRepository _repository;
-    private readonly ParkingLot _lot;
+    private readonly IGetSpotRowsQuery _spotRowsQuery;
+    private readonly ILotSnapshotStream _stream;
     private List<SpotAdminRowVm> _allSpots = new();
 
     [ObservableProperty] private string _searchText = "";
@@ -18,10 +18,10 @@ public partial class AdminPageViewModel : ObservableObject
 
     public ObservableCollection<SpotAdminRowVm> FilteredSpots { get; } = new();
 
-    public AdminPageViewModel(IParkingRepository repository, ParkingLot lot)
+    public AdminPageViewModel(IGetSpotRowsQuery spotRowsQuery, ILotSnapshotStream stream)
     {
-        _repository = repository;
-        _lot = lot;
+        _spotRowsQuery = spotRowsQuery;
+        _stream        = stream;
     }
 
     public void Activate() => _ = ReloadAsync();
@@ -33,13 +33,14 @@ public partial class AdminPageViewModel : ObservableObject
     [RelayCommand]
     public async Task ReloadAsync()
     {
-        var spots = await _repository.GetSpotsByLotIdAsync(_lot.Id);
+        var lotId = _stream.Current.Id;
+        var spots = await _spotRowsQuery.ExecuteAsync(lotId);
         _allSpots = spots.Select(s => new SpotAdminRowVm
         {
             Id         = s.Id,
             Address    = s.Address,
             Type       = s.Type,
-            Floor      = s.Floor,
+            Floor      = s.Floor.ToString(),
             IsOccupied = s.IsOccupied
         }).ToList();
         ApplyFilter();

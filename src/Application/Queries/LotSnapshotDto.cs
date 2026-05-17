@@ -8,5 +8,6 @@ public record LotSnapshotDto(
     int TotalSpots,
     int OccupiedSpots,
     IReadOnlyList<ZoneSummaryDto> ZoneSummaries,
-    IReadOnlyList<GateSummaryDto> Gates
+    IReadOnlyList<GateSummaryDto> Gates,
+    IReadOnlyList<SpotRowDto> Spots
 );
