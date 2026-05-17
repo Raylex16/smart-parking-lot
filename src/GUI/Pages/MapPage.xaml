@@ -2,7 +2,8 @@
 <Page
     x:Class="SmartParkingLot.Gui.Pages.MapPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:SmartParkingLot.Gui.ViewModels">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -20,7 +21,7 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBlock Text="Mapa de Spots"
+            <TextBlock x:Uid="MapPageTitle"
                        FontSize="15"
                        FontWeight="SemiBold"
                        Foreground="{ThemeResource Tx1Brush}"
@@ -34,27 +35,35 @@
                     Background="{ThemeResource Layer1Brush}">
             <Button x:Name="EntryBtn" Click="OnEntryClick" Style="{StaticResource AccentButtonStyle}">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="" FontSize="12" />
-                    <TextBlock Text="Solicitar entrada" />
+                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE8C8;"
+                              AutomationProperties.Name="Entrada"
+                              FontSize="12" />
+                    <TextBlock x:Uid="MapEntryButton" />
                 </StackPanel>
             </Button>
             <Button x:Name="ExitBtn" Click="OnExitClick">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="" FontSize="12" />
-                    <TextBlock Text="Solicitar salida" />
+                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE8C7;"
+                              AutomationProperties.Name="Salida"
+                              FontSize="12" />
+                    <TextBlock x:Uid="MapExitButton" />
                 </StackPanel>
             </Button>
             <AppBarSeparator />
-            <Button x:Name="SimEntryIrBtn" Click="OnSimEntryIrClick">
+            <Button Command="{x:Bind ViewModel.SimEntryIrCommand}">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="" FontSize="12" />
-                    <TextBlock Text="Simular IR entrada" />
+                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE7B3;"
+                              AutomationProperties.Name="Sensor IR entrada"
+                              FontSize="12" />
+                    <TextBlock x:Uid="MapSimEntryButton" />
                 </StackPanel>
             </Button>
-            <Button x:Name="SimExitIrBtn" Click="OnSimExitIrClick">
+            <Button Command="{x:Bind ViewModel.SimExitIrCommand}">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="" FontSize="12" />
-                    <TextBlock Text="Simular IR salida" />
+                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE7B3;"
+                              AutomationProperties.Name="Sensor IR salida"
+                              FontSize="12" />
+                    <TextBlock x:Uid="MapSimExitButton" />
                 </StackPanel>
             </Button>
         </StackPanel>
@@ -76,11 +85,11 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock x:Name="MapTitle" Text="Planta 1"
+                                <TextBlock Text="{x:Bind ViewModel.MapTitle, Mode=OneWay}"
                                            FontSize="13"
                                            FontWeight="SemiBold"
                                            Foreground="{ThemeResource Tx1Brush}" />
-                                <TextBlock x:Name="MapSubtitle"
+                                <TextBlock Text="{x:Bind ViewModel.MapSubtitle, Mode=OneWay}"
                                            FontSize="11"
                                            Foreground="{ThemeResource Tx3Brush}" />
                             </StackPanel>
@@ -90,62 +99,142 @@
                                             Background="{ThemeResource Layer2Brush}"
                                             BorderBrush="{ThemeResource StrokeBrush}"
                                             BorderThickness="1" />
-                                    <TextBlock Text="Libre" FontSize="10" Foreground="{ThemeResource Tx3Brush}" />
+                                    <TextBlock x:Uid="MapLegendFree" FontSize="10" Foreground="{ThemeResource Tx3Brush}" />
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Spacing="5">
                                     <Border Width="10" Height="10" CornerRadius="2"
                                             Background="{ThemeResource AccentLightBrush}"
                                             BorderBrush="{ThemeResource AccentFillColorDefaultBrush}"
                                             BorderThickness="1" />
-                                    <TextBlock Text="Ocupado" FontSize="10" Foreground="{ThemeResource Tx3Brush}" />
+                                    <TextBlock x:Uid="MapLegendOccupied" FontSize="10" Foreground="{ThemeResource Tx3Brush}" />
                                 </StackPanel>
                             </StackPanel>
                         </Grid>
 
-                        <Border x:Name="EntryGatesStrip"
-                                BorderBrush="{ThemeResource Stroke2Brush}"
+                        <Border BorderBrush="{ThemeResource Stroke2Brush}"
                                 BorderThickness="0,0,0,1"
                                 Padding="0,6,0,8">
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <TextBlock Text="ENTRADAS"
+                                <TextBlock x:Uid="MapEntradasLabel"
                                            FontSize="9"
                                            FontWeight="SemiBold"
                                            CharacterSpacing="80"
                                            Foreground="{ThemeResource Tx3Brush}"
                                            VerticalAlignment="Center"
                                            Margin="0,0,4,0" />
-                                <ItemsControl x:Name="EntryGatesPanel">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Orientation="Horizontal" Spacing="6" />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                </ItemsControl>
+                                <ItemsRepeater ItemsSource="{x:Bind ViewModel.EntryGatePills, Mode=OneWay}">
+                                    <ItemsRepeater.Layout>
+                                        <StackLayout Orientation="Horizontal" Spacing="6" />
+                                    </ItemsRepeater.Layout>
+                                    <ItemsRepeater.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:GatePillVm">
+                                            <Border Height="24" Padding="10,0,10,0" CornerRadius="12"
+                                                    Background="{x:Bind PillBackground}"
+                                                    BorderBrush="{x:Bind PillBorderBrush}"
+                                                    BorderThickness="1"
+                                                    AutomationProperties.Name="{x:Bind AccessibleLabel}">
+                                                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE8C8;" FontSize="10"
+                                                              AutomationProperties.Name="Entrada"
+                                                              Foreground="{x:Bind TextBrush}" />
+                                                    <TextBlock Text="{x:Bind GateId}" FontSize="10" FontWeight="SemiBold"
+                                                               VerticalAlignment="Center" Foreground="{x:Bind TextBrush}" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsRepeater.ItemTemplate>
+                                </ItemsRepeater>
                             </StackPanel>
                         </Border>
 
-                        <StackPanel x:Name="ZonesPanel" Spacing="10" />
+                        <ItemsRepeater ItemsSource="{x:Bind ViewModel.ZoneGroups, Mode=OneWay}" Margin="0,0,0,0">
+                            <ItemsRepeater.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ZoneSpotGroupVm">
+                                    <StackPanel Margin="0,0,0,10">
+                                        <Grid Margin="0,0,0,6">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{x:Bind ZoneName}"
+                                                       FontSize="10" FontWeight="Bold" CharacterSpacing="80"
+                                                       Foreground="{ThemeResource Tx3Brush}" />
+                                            <Border Grid.Column="1" Height="1"
+                                                    Background="{ThemeResource Stroke2Brush}"
+                                                    VerticalAlignment="Center" Margin="8,0,0,0" />
+                                        </Grid>
+                                        <ItemsRepeater ItemsSource="{x:Bind Spots, Mode=OneWay}">
+                                            <ItemsRepeater.Layout>
+                                                <UniformGridLayout MinItemWidth="48" MinItemHeight="60"
+                                                                   ItemsStretch="None" MinRowSpacing="4" MinColumnSpacing="4" />
+                                            </ItemsRepeater.Layout>
+                                            <ItemsRepeater.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:SpotTileVm">
+                                                    <Border Width="44" Height="54" CornerRadius="5" BorderThickness="1"
+                                                            Padding="2"
+                                                            Background="{x:Bind TileBackground, Mode=OneWay}"
+                                                            BorderBrush="{x:Bind TileBorderBrush, Mode=OneWay}"
+                                                            ToolTipService.ToolTip="{x:Bind ToolTipText}">
+                                                        <Button Command="{x:Bind ToggleCommand}"
+                                                                AutomationProperties.Name="{x:Bind AccessibleLabel, Mode=OneWay}"
+                                                                Background="Transparent" BorderThickness="0" Padding="0"
+                                                                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                                            <StackPanel HorizontalAlignment="Center"
+                                                                        VerticalAlignment="Center" Spacing="2">
+                                                                <TextBlock Text="{x:Bind SpotId}" FontSize="9"
+                                                                           FontWeight="Bold"
+                                                                           FontFamily="Cascadia Code, Consolas, monospace"
+                                                                           HorizontalAlignment="Center"
+                                                                           Foreground="{ThemeResource Tx1Brush}" />
+                                                                <TextBlock Text="{x:Bind ShortTypeName}" FontSize="8"
+                                                                           HorizontalAlignment="Center"
+                                                                           Foreground="{ThemeResource Tx3Brush}" />
+                                                            </StackPanel>
+                                                        </Button>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsRepeater.ItemTemplate>
+                                        </ItemsRepeater>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsRepeater.ItemTemplate>
+                        </ItemsRepeater>
 
                         <Border BorderBrush="{ThemeResource Stroke2Brush}" BorderThickness="0,1,0,0" Padding="0,8,0,0">
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <TextBlock Text="SALIDAS"
+                                <TextBlock x:Uid="MapSalidasLabel"
                                            FontSize="9"
                                            FontWeight="SemiBold"
                                            CharacterSpacing="80"
                                            Foreground="{ThemeResource Tx3Brush}"
                                            VerticalAlignment="Center"
                                            Margin="0,0,4,0" />
-                                <ItemsControl x:Name="ExitGatesPanel">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Orientation="Horizontal" Spacing="6" />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                </ItemsControl>
+                                <ItemsRepeater ItemsSource="{x:Bind ViewModel.ExitGatePills, Mode=OneWay}">
+                                    <ItemsRepeater.Layout>
+                                        <StackLayout Orientation="Horizontal" Spacing="6" />
+                                    </ItemsRepeater.Layout>
+                                    <ItemsRepeater.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:GatePillVm">
+                                            <Border Height="24" Padding="10,0,10,0" CornerRadius="12"
+                                                    Background="{x:Bind PillBackground}"
+                                                    BorderBrush="{x:Bind PillBorderBrush}"
+                                                    BorderThickness="1"
+                                                    AutomationProperties.Name="{x:Bind AccessibleLabel}">
+                                                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE8C7;" FontSize="10"
+                                                              AutomationProperties.Name="Salida"
+                                                              Foreground="{x:Bind TextBrush}" />
+                                                    <TextBlock Text="{x:Bind GateId}" FontSize="10" FontWeight="SemiBold"
+                                                               VerticalAlignment="Center" Foreground="{x:Bind TextBrush}" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsRepeater.ItemTemplate>
+                                </ItemsRepeater>
                             </StackPanel>
                         </Border>
 
-                        <TextBlock Text="Click en un spot para cambiar su estado (publica evento de sensor)."
+                        <TextBlock x:Uid="MapSpotHint"
                                    FontSize="10"
                                    Foreground="{ThemeResource Tx3Brush}"
                                    Margin="0,6,0,0" />
@@ -157,14 +246,66 @@
             <StackPanel Grid.Column="1" Spacing="10">
                 <Border Style="{StaticResource CardStyle}" Padding="14">
                     <StackPanel Spacing="6">
-                        <TextBlock Text="Control de Gates" Style="{StaticResource CardTitleTextStyle}" />
-                        <StackPanel x:Name="GateControlPanel" Spacing="8" Margin="0,4,0,0" />
+                        <TextBlock x:Uid="MapGateControlCardTitle" Style="{StaticResource CardTitleTextStyle}" />
+                        <ItemsRepeater ItemsSource="{x:Bind ViewModel.GateControls, Mode=OneWay}" Margin="0,4,0,0">
+                            <ItemsRepeater.ItemTemplate>
+                                <DataTemplate x:DataType="vm:GateControlVm">
+                                    <StackPanel Spacing="4" Margin="0,0,0,8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{x:Bind GateId}" FontSize="11" FontWeight="SemiBold"
+                                                       Foreground="{ThemeResource Tx1Brush}" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1" Text="{x:Bind StateLabel, Mode=OneWay}"
+                                                       FontSize="11" Foreground="{ThemeResource Tx2Brush}" VerticalAlignment="Center" />
+                                        </Grid>
+                                        <TextBlock Text="{x:Bind TypeLabel}" FontSize="10" Foreground="{ThemeResource Tx3Brush}" />
+                                        <Button Command="{x:Bind ToggleCommand}"
+                                                Content="{x:Bind ButtonLabel, Mode=OneWay}"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Center"
+                                                Margin="0,4,0,0" />
+                                        <Border Height="1" Background="{ThemeResource Stroke2Brush}" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsRepeater.ItemTemplate>
+                        </ItemsRepeater>
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource CardStyle}" Padding="14">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="Resumen" Style="{StaticResource CardTitleTextStyle}" />
-                        <Grid x:Name="SummaryGrid" Margin="0,6,0,0" />
+                        <TextBlock x:Uid="MapSummaryCardTitle" Style="{StaticResource CardTitleTextStyle}" />
+                        <StackPanel Margin="0,6,0,0" Spacing="0">
+                            <Grid Padding="0,5,0,5" BorderBrush="{ThemeResource Stroke2Brush}" BorderThickness="0,0,0,1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Uid="MapSummaryFree" FontSize="11" Foreground="{ThemeResource Tx2Brush}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.AvailableCount, Mode=OneWay}"
+                                           FontSize="11" FontWeight="SemiBold" Foreground="{ThemeResource Tx1Brush}"/>
+                            </Grid>
+                            <Grid Padding="0,5,0,5" BorderBrush="{ThemeResource Stroke2Brush}" BorderThickness="0,0,0,1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Uid="MapSummaryOccupied" FontSize="11" Foreground="{ThemeResource Tx2Brush}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.OccupiedCount, Mode=OneWay}"
+                                           FontSize="11" FontWeight="SemiBold" Foreground="{ThemeResource Tx1Brush}"/>
+                            </Grid>
+                            <Grid Padding="0,5,0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Uid="MapSummaryTotal" FontSize="11" Foreground="{ThemeResource Tx2Brush}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.TotalCount, Mode=OneWay}"
+                                           FontSize="11" FontWeight="SemiBold" Foreground="{ThemeResource Tx1Brush}"/>
+                            </Grid>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
             </StackPanel>

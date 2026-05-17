@@ -1,4 +1,5 @@
 using System;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Dispatching;
@@ -6,8 +7,11 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using SmartParkingLot.Core;
 using SmartParkingLot.Gui.Bootstrap;
 using SmartParkingLot.Gui.Pages;
+using SmartParkingLot.Application.Hardware;
+using SmartParkingLot.Gui.Resources;
 using WinRT.Interop;
 
 namespace SmartParkingLot.Gui;
@@ -16,7 +20,8 @@ public sealed partial class MainWindow : Window
 {
     private readonly DispatcherQueue _ui;
     private readonly DispatcherQueueTimer _clockTimer;
-    private ParkingServices? _services;
+    private bool _servicesReady;
+    private IHardwareStatus? _status;
 
     public MainWindow()
     {
@@ -41,10 +46,16 @@ public sealed partial class MainWindow : Window
     public void ShowFatalError(Exception ex) =>
         ContentFrame.Content = new SplashPage($"Error fatal: {ex.Message}", isError: true);
 
-    public void OnServicesReady(ParkingServices services)
+    public void OnServicesReady()
     {
-        _services = services;
-        LotNameText.Text = services.Lot.Name;
+        _servicesReady = true;
+
+        _status = App.Services.GetRequiredService<IHardwareStatus>();
+        _status.Changed += (_, _) => _ui.TryEnqueue(UpdateArduinoStatus);
+
+        var lot = App.Services.GetRequiredService<ParkingLot>();
+
+        LotNameText.Text = lot.Name;
         UpdateOccupancyStatus();
         UpdateArduinoStatus();
 
@@ -57,13 +68,13 @@ public sealed partial class MainWindow : Window
             }
         }
 
-        foreach (var spot in services.Lot.GetSpots())
+        foreach (var spot in lot.GetSpots())
             spot.OccupancyChanged += _ => _ui.TryEnqueue(UpdateOccupancyStatus);
     }
 
     private void Nav_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
-        if (_services is null) return;
+        if (!_servicesReady) return;
 
         if (args.IsSettingsSelected)
         {
@@ -74,20 +85,21 @@ public sealed partial class MainWindow : Window
         if (args.SelectedItem is not NavigationViewItem item) return;
         ContentFrame.Content = (item.Tag as string) switch
         {
-            "dashboard" => new DashboardPage(_services),
-            "map"       => new MapPage(_services),
-            "log"       => new LogPage(_services),
-            "admin"     => new AdminPage(_services),
-            "hardware"  => new HardwarePage(_services),
+            "dashboard" => App.Services.GetRequiredService<DashboardPage>(),
+            "map"       => App.Services.GetRequiredService<MapPage>(),
+            "log"       => App.Services.GetRequiredService<LogPage>(),
+            "admin"     => App.Services.GetRequiredService<AdminPage>(),
+            "hardware"  => App.Services.GetRequiredService<HardwarePage>(),
             _ => null
         };
     }
 
     private void UpdateOccupancyStatus()
     {
-        if (_services is null) return;
-        var occ = _services.Lot.TotalSpots - _services.Lot.AvailableSpots;
-        var tot = _services.Lot.TotalSpots;
+        if (!_servicesReady) return;
+        var lot = App.Services.GetRequiredService<ParkingLot>();
+        var occ = lot.TotalSpots - lot.AvailableSpots;
+        var tot = lot.TotalSpots;
         var pct = tot == 0 ? 0 : (int)Math.Round(100.0 * occ / tot);
         OccupancyStatusText.Text = $"{occ}/{tot} spots · {pct}% ocupado";
         LotStatusText.Text = $"{occ}/{tot} spots";
@@ -95,13 +107,9 @@ public sealed partial class MainWindow : Window
 
     private void UpdateArduinoStatus()
     {
-        if (_services is null) return;
-        var listening = _services.Bridge.IsListening;
-        ArduinoStatusText.Text = listening
-            ? $"Arduino {_services.Config.Port}"
-            : "Arduino — desconectado";
-        ArduinoLed.Fill = (Brush)XamlApp.Current.Resources[
-            listening ? "SuccessBrush" : "DangerBrush"];
+        if (_status is null) return;
+        ArduinoStatusText.Text = _status.DisplayName;
+        ArduinoLed.Fill = _status.IsConnected ? AppBrushes.Success : AppBrushes.Danger;
     }
 
     public void RefreshArduinoStatus() => _ui.TryEnqueue(UpdateArduinoStatus);

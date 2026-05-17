@@ -8,13 +8,13 @@ public sealed class SerialCommandDispatcher : ICommandDispatcher, IDisposable
 {
     private const string LogSource = "SerialCommandDispatcher";
 
-    private readonly ArduinoSerialBridge _bridge;
+    private readonly ISerialWriter _bridge;
     private readonly ILogger _logger;
     private readonly BlockingCollection<ActuatorCommand> _queue = new();
     private readonly Thread _writer;
     private volatile bool _running = true;
 
-    public SerialCommandDispatcher(ArduinoSerialBridge bridge, ILogger logger)
+    public SerialCommandDispatcher(ISerialWriter bridge, ILogger logger)
     {
         _bridge = bridge;
         _logger = logger;
