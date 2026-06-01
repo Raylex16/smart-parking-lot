@@ -18,7 +18,7 @@ void setup() {
     servos[i].attach(SERVO_PINS[i]);
     servos[i].write(MIN_ANGLE);
   }
-
+// 55 grados es lo maximos
   Serial.println("=== Servo Test (dual) ===");
   Serial.println("Servo 1 -> pin 9   |   Servo 2 -> pin 10");
   Serial.println();

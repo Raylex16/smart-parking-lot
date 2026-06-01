@@ -11,6 +11,30 @@
       "address": "Zona-A Fila-1",
       "type": "Estándar",
       "floor": "Planta Baja"
+    },
+    {
+      "sensorId": "IR2",
+      "spotId": "A2",
+      "actuatorId": "LED2",
+      "address": "Zona-A Fila-2",
+      "type": "Estándar",
+      "floor": "Planta Baja"
+    },
+    {
+      "sensorId": "IR3",
+      "spotId": "A3",
+      "actuatorId": "LED3",
+      "address": "Zona-A Fila-3",
+      "type": "Estándar",
+      "floor": "Planta Baja"
+    },
+    {
+      "sensorId": "IR4",
+      "spotId": "A4",
+      "actuatorId": "LED4",
+      "address": "Zona-A Fila-4",
+      "type": "Estándar",
+      "floor": "Planta Baja"
     }
   ],
   "gates": [

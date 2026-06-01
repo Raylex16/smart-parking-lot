@@ -1,20 +1,23 @@
 // Master del Smart Parking Lot.
-// Maneja sensores IR (spots y puertas), LEDs, LCD I2C y servo de la puerta de entrada.
-// El servo de la puerta de salida (GATE2) lo opera un Uno esclavo via I2C.
+// Maneja sensores IR (spots y puertas), LEDs, LCD I2C y servos de puertas.
+// El servo de entrada (GATE1) y salida (GATE2) los opera un Uno esclavo via I2C.
 //
-// I2C bus (pins 20 SDA / 21 SCL en el Mega):
+// I2C Wire (pins 20 SDA / 21 SCL en el Mega):
 //   0x27 -> LCD 16x2
-//   0x08 -> Uno esclavo (controla servo GATE2)
+//   0x08 -> Uno esclavo (controla servos GATE1 y GATE2)
+// I2C Wire1 (pins 70 SDA1 / 71 SCL1 en el Mega):
+//   0x21 -> OV7670 G-01 y G-02 (uso disyuntivo via PWDN — pines 33 y 34)
+//   Integracion de camaras pendiente: ver hardware-wiring.md seccion 5.
 
 #include <Servo.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
-const int SENSOR_COUNT = 3;
+const int SENSOR_COUNT = 4;
 const int GATE_COUNT   = 2;
 
-const int IR_PINS[SENSOR_COUNT]  = { 7, 6, 5 };
-const int LED_PINS[SENSOR_COUNT] = { 13, 12, 11 };
+const int IR_PINS[SENSOR_COUNT]  = { 7, 6, 5, 9 };
+const int LED_PINS[SENSOR_COUNT] = { 13, 12, 11, 10 };
 
 const int GATE_IR_PINS[GATE_COUNT] = { 4, 3 };
 
@@ -30,7 +33,7 @@ const uint8_t LCD_COLS         = 16;
 const uint8_t LCD_ROWS         = 2;
 const unsigned long MSG_DURATION_MS = 3000;
 
-int lastState[SENSOR_COUNT]   = { -1, -1, -1 };
+int lastState[SENSOR_COUNT]   = { -1, -1, -1, -1 };
 int lastGateState[GATE_COUNT] = { -1, -1 };
 Servo localGates[GATE_COUNT];
 LiquidCrystal_I2C lcd(LCD_I2C_ADDR, LCD_COLS, LCD_ROWS);
