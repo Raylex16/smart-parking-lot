@@ -7,11 +7,13 @@ namespace SmartParkingLot.Gui.Pages;
 public sealed partial class HardwarePage : Page
 {
     public HardwarePageViewModel ViewModel { get; }
+    public HardwareConfigEditorViewModel Editor { get; }
 
-    public HardwarePage(HardwarePageViewModel viewModel)
+    public HardwarePage(HardwarePageViewModel viewModel, HardwareConfigEditorViewModel editor)
     {
         InitializeComponent();
         ViewModel = viewModel;
+        Editor    = editor;
         Loaded   += (_, _) => ViewModel.Activate();
         Unloaded += (_, _) => ViewModel.Deactivate();
 

@@ -105,7 +105,9 @@ public static class ServiceCollectionExtensions
         services.AddTransient<Pages.AdminPage>(sp =>
             new Pages.AdminPage(sp.GetRequiredService<AdminPageViewModel>()));
         services.AddTransient<Pages.HardwarePage>(sp =>
-            new Pages.HardwarePage(sp.GetRequiredService<HardwarePageViewModel>()));
+            new Pages.HardwarePage(
+                sp.GetRequiredService<HardwarePageViewModel>(),
+                sp.GetRequiredService<HardwareConfigEditorViewModel>()));
 
         var provider = services.BuildServiceProvider();
 

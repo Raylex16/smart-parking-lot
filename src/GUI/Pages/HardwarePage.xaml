@@ -212,6 +212,87 @@
                         </StackPanel>
                     </Border>
                 </Grid>
+
+                <!-- Configuración editable (Fase 1: aplica al reiniciar) -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Padding="16" Spacing="10">
+                        <TextBlock Text="Configuración (hardware.json)"
+                                   Style="{StaticResource CardTitleTextStyle}" />
+
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="PUERTO" Style="{StaticResource SectionHeaderTextStyle}" />
+                                <TextBox Text="{x:Bind Editor.Port, Mode=TwoWay}" Width="120" />
+                            </StackPanel>
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="BAUD RATE" Style="{StaticResource SectionHeaderTextStyle}" />
+                                <TextBox Text="{x:Bind Editor.BaudRate, Mode=TwoWay}" Width="120" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Spots" Style="{StaticResource SectionHeaderTextStyle}"
+                                       VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Content="+ Spot"
+                                    Command="{x:Bind Editor.AddSpotCommand}" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{x:Bind Editor.Spots, Mode=OneWay}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:SpotMappingRowVm">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2">
+                                        <TextBox Text="{x:Bind SpotId, Mode=TwoWay}" PlaceholderText="SpotId" Width="80" />
+                                        <TextBox Text="{x:Bind SensorId, Mode=TwoWay}" PlaceholderText="SensorId" Width="80" />
+                                        <TextBox Text="{x:Bind ActuatorId, Mode=TwoWay}" PlaceholderText="Actuador" Width="80" />
+                                        <TextBox Text="{x:Bind Address, Mode=TwoWay}" PlaceholderText="Dirección" Width="120" />
+                                        <TextBox Text="{x:Bind Type, Mode=TwoWay}" PlaceholderText="Tipo" Width="90" />
+                                        <TextBox Text="{x:Bind Floor, Mode=TwoWay}" PlaceholderText="Planta" Width="90" />
+                                        <Button Content="✕" Command="{x:Bind RemoveCommand}"
+                                                AutomationProperties.Name="Eliminar spot" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Gates" Style="{StaticResource SectionHeaderTextStyle}"
+                                       VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Content="+ Gate"
+                                    Command="{x:Bind Editor.AddGateCommand}" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{x:Bind Editor.Gates, Mode=OneWay}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:GateMappingRowVm">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2">
+                                        <TextBox Text="{x:Bind GateId, Mode=TwoWay}" PlaceholderText="GateId" Width="80" />
+                                        <TextBox Text="{x:Bind Type, Mode=TwoWay}" PlaceholderText="ENTRY/EXIT" Width="90" />
+                                        <TextBox Text="{x:Bind IrSensorId, Mode=TwoWay}" PlaceholderText="IR Sensor" Width="100" />
+                                        <TextBox Text="{x:Bind ActuatorId, Mode=TwoWay}" PlaceholderText="Actuador" Width="80" />
+                                        <TextBox Text="{x:Bind Pin, Mode=TwoWay}" PlaceholderText="Pin" Width="60" />
+                                        <Button Content="✕" Command="{x:Bind RemoveCommand}"
+                                                AutomationProperties.Name="Eliminar gate" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                            <Button Content="Guardar configuración"
+                                    Command="{x:Bind Editor.SaveCommand}"
+                                    Style="{StaticResource AccentButtonStyle}" />
+                            <TextBlock Text="{x:Bind Editor.StatusMessage, Mode=OneWay}"
+                                       Foreground="{ThemeResource Tx3Brush}"
+                                       VerticalAlignment="Center" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </ScrollViewer>
     </Grid>
