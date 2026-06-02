@@ -73,6 +73,12 @@ public static class ApplicationModule
         services.AddSingleton(lot);
         services.AddSingleton(repository);
         services.AddSingleton<IParkingRepository>(_ => repository);
+        services.AddSingleton<IParkingLotRepository>(_ => repository);
+        services.AddSingleton<ISpotRepository>(_ => repository);
+        services.AddSingleton<IRequestRepository>(_ => repository);
+        services.AddSingleton<ISensorRepository>(_ => repository);
+        services.AddSingleton<IDeviceActionRepository>(_ => repository);
+        services.AddSingleton<IAlertRepository>(_ => repository);
 
         services.AddSingleton<IEventPublisher, InProcessEventBus>();
 
@@ -121,10 +127,10 @@ public static class ApplicationModule
         });
 
         services.AddSingleton<ICapacityService>(sp =>
-            new CapacityService(lot, sp.GetRequiredService<ILogger>()));
+            new CapacityService(lot, sp.GetRequiredService<ISpotRepository>(), sp.GetRequiredService<ILogger>()));
 
         services.AddSingleton<IAlertService>(sp =>
-            new AlertService(sp.GetRequiredService<ILogger>(), repository));
+            new AlertService(sp.GetRequiredService<ILogger>(), sp.GetRequiredService<IAlertRepository>()));
 
         services.AddSingleton<IApprovalQueue, InMemoryApprovalQueue>();
         services.AddSingleton<IApprovalDecisionService>(sp =>
@@ -162,6 +168,8 @@ public static class ApplicationModule
         services.AddSingleton<GateController>(sp =>
         {
             var gc = new GateController(
+                sp.GetRequiredService<ISpotRepository>(),
+                sp.GetRequiredService<IRequestRepository>(),
                 sp.GetRequiredService<ICapacityService>(),
                 sp.GetRequiredService<IAlertService>(),
                 sp.GetRequiredService<IAccessPolicy>(),
