@@ -51,4 +51,18 @@ public class HardwareConfigValidatorTests
         };
         Assert.Contains(HardwareConfigValidator.Validate(bad), e => e.Contains("Pin"));
     }
+
+    [Fact]
+    public void Validate_DuplicateSensorId_ReportsError()
+    {
+        var dup = Valid() with
+        {
+            Sensors = new[]
+            {
+                new SensorMapping("IR1", "A-01", "LED1", "Zona A", "Estándar", "Planta 1"),
+                new SensorMapping("IR1", "A-02", "LED2", "Zona A", "Estándar", "Planta 1")
+            }
+        };
+        Assert.Contains(HardwareConfigValidator.Validate(dup), e => e.Contains("IR1"));
+    }
 }

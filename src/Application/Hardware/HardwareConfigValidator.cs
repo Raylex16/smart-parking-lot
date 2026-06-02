@@ -18,7 +18,7 @@ public static class HardwareConfigValidator
 
         var spotIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var sensorIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var s in config.Sensors)
+        foreach (var s in config.Sensors ?? [])
         {
             if (string.IsNullOrWhiteSpace(s.SpotId))
                 errors.Add("Hay un spot con Id vacío.");
@@ -26,13 +26,13 @@ public static class HardwareConfigValidator
                 errors.Add($"SpotId duplicado: '{s.SpotId}'.");
 
             if (string.IsNullOrWhiteSpace(s.SensorId))
-                errors.Add($"El spot '{s.SpotId}' no tiene SensorId.");
+                errors.Add("Hay un sensor sin SensorId.");
             else if (!sensorIds.Add(s.SensorId))
                 errors.Add($"SensorId duplicado: '{s.SensorId}'.");
         }
 
         var gateIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var g in config.Gates)
+        foreach (var g in config.Gates ?? [])
         {
             if (string.IsNullOrWhiteSpace(g.GateId))
                 errors.Add("Hay un gate con Id vacío.");
