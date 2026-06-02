@@ -1,6 +1,6 @@
 {
   "port": "COM5",
-  "baudRate": 9600,
+  "baudRate": 115200,
   "manualApprovalTimeoutSeconds": 15,
   "allowedPlates": ["ABC-123", "XYZ-789"],
   "sensors": [
@@ -28,5 +28,9 @@
       "actuatorId": "GATE2",
       "pin": 10
     }
+  ],
+  "cameras": [
+    { "gateId": "G-01", "sensorId": "CAM-01" },
+    { "gateId": "G-02", "sensorId": "CAM-02" }
   ]
 }

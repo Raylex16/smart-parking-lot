@@ -30,7 +30,8 @@ public sealed record ApplicationOptions(
     int ExitGatePin,
     string EntryGateActuatorId,
     string ExitGateActuatorId,
-    bool StartBridgeSafe = false);
+    bool StartBridgeSafe = false,
+    string? TessDataPath = null);
 
 public sealed record ApplicationBootstrapResult(
     HardwareConfig HwConfig,
@@ -85,6 +86,7 @@ public static class ApplicationModule
                     sensorIds));
             services.AddSingleton<ArduinoSerialBridge>(sp => sp.GetRequiredService<MockArduinoBridge>());
             services.AddSingleton<IArduinoReader>(sp => sp.GetRequiredService<MockArduinoBridge>());
+            services.AddSingleton<ISerialWriter>(sp => sp.GetRequiredService<ArduinoSerialBridge>());
             services.AddSingleton<SerialCommandDispatcher>(sp =>
                 new SerialCommandDispatcher(sp.GetRequiredService<MockArduinoBridge>(), sp.GetRequiredService<ILogger>()));
             services.AddSingleton<ICommandDispatcher>(sp => sp.GetRequiredService<SerialCommandDispatcher>());
@@ -99,6 +101,7 @@ public static class ApplicationModule
                     sp.GetRequiredService<IEventPublisher>(),
                     sp.GetRequiredService<ILogger>()));
             services.AddSingleton<IArduinoReader>(sp => sp.GetRequiredService<ArduinoSerialBridge>());
+            services.AddSingleton<ISerialWriter>(sp => sp.GetRequiredService<ArduinoSerialBridge>());
             services.AddSingleton<SerialCommandDispatcher>(sp =>
                 new SerialCommandDispatcher(sp.GetRequiredService<ArduinoSerialBridge>(), sp.GetRequiredService<ILogger>()));
             services.AddSingleton<ICommandDispatcher>(sp => sp.GetRequiredService<SerialCommandDispatcher>());
@@ -222,7 +225,21 @@ public static class ApplicationModule
         services.AddTransient<ILogQueryService>(sp =>
             new LogQueryService(repository, sp.GetRequiredService<Logging.FileLogger>()));
 
-        services.AddSingleton<ILicensePlateRecognizer, PlaceholderPlateRecognizer>();
+        if (!string.IsNullOrEmpty(opts.TessDataPath))
+        {
+            services.AddSingleton<ICameraCapture>(sp =>
+                new OV7670FrameReader(
+                    sp.GetRequiredService<ISerialWriter>(),
+                    sp.GetRequiredService<IEventPublisher>()));
+            services.AddSingleton<ILicensePlateRecognizer>(sp =>
+                new TesseractPlateRecognizer(
+                    sp.GetRequiredService<ICameraCapture>(),
+                    opts.TessDataPath));
+        }
+        else
+        {
+            services.AddSingleton<ILicensePlateRecognizer, PlaceholderPlateRecognizer>();
+        }
 
         services.AddSingleton<IApplicationStartup>(sp =>
             new ApplicationStartup(

@@ -33,7 +33,7 @@ public sealed class GateSensorHandler
         if (!_gateSensorMapping.TryGetValue(evt.SensorId, out var gate)) return;
         if (evt.RawValue != "1") return;
 
-        var plate = _plateRecognizer.Recognize(gate.GateId);
+        var plate = await _plateRecognizer.RecognizeAsync(gate.GateId).ConfigureAwait(false);
         _logger.Info(LogSource, $"Vehículo detectado en {gate.GateId} ({gate.Type}) → {plate}");
 
 

@@ -19,13 +19,18 @@ public sealed record GateMapping(
     [property: JsonPropertyName("actuatorId")]  string ActuatorId,
     [property: JsonPropertyName("pin")]         int Pin);
 
+public sealed record CameraMapping(
+    [property: JsonPropertyName("gateId")]   string GateId,
+    [property: JsonPropertyName("sensorId")] string SensorId);
+
 public sealed record HardwareConfig(
     [property: JsonPropertyName("port")]     string Port,
     [property: JsonPropertyName("baudRate")] int BaudRate,
     [property: JsonPropertyName("sensors")]  IReadOnlyList<SensorMapping> Sensors,
     [property: JsonPropertyName("gates")]    IReadOnlyList<GateMapping> Gates,
     [property: JsonPropertyName("manualApprovalTimeoutSeconds")] int ManualApprovalTimeoutSeconds = 15,
-    [property: JsonPropertyName("allowedPlates")] IReadOnlyList<string>? AllowedPlates = null)
+    [property: JsonPropertyName("allowedPlates")] IReadOnlyList<string>? AllowedPlates = null,
+    [property: JsonPropertyName("cameras")]  IReadOnlyList<CameraMapping>? Cameras = null)
 {
     public static HardwareConfig Load(string path)
     {

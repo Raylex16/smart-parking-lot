@@ -1,4 +1,5 @@
 using System.IO.Ports;
+using System.Text;
 using SmartParkingLot.Core.Events;
 using SmartParkingLot.Core.Interfaces;
 
@@ -13,6 +14,11 @@ public class ArduinoSerialBridge : IArduinoReader, ISerialWriter
     private readonly ILogger _logger;
     private Thread? _readThread;
     private volatile bool _listening;
+
+    private enum CamState { Idle, Receiving }
+    private CamState _camState = CamState.Idle;
+    private string _camGateId = string.Empty;
+    private readonly StringBuilder _camBuffer = new();
 
     public virtual bool IsListening => _listening;
 
@@ -80,6 +86,12 @@ public class ArduinoSerialBridge : IArduinoReader, ISerialWriter
 
     private void ProcessLine(string line)
     {
+        if (line.StartsWith("CAM:", StringComparison.Ordinal))
+        {
+            ProcessCameraLine(line);
+            return;
+        }
+
         if (SerialProtocol.TryParseEvent(line, out var evt))
         {
             _events.Publish(evt!);
@@ -97,6 +109,58 @@ public class ArduinoSerialBridge : IArduinoReader, ISerialWriter
         }
 
         _logger.Debug(LogSource, $"Linea ignorada: '{line}'");
+    }
+
+    private void ProcessCameraLine(string line)
+    {
+        if (line.StartsWith("CAM:BEGIN:", StringComparison.Ordinal))
+        {
+            // Format: CAM:BEGIN:{byteCount}:{gateId}
+            var parts = line.Split(':', 4);
+            if (parts.Length == 4)
+            {
+                _camState = CamState.Receiving;
+                _camGateId = parts[3];
+                _camBuffer.Clear();
+                _logger.Debug(LogSource, $"CAM frame begin: gate={_camGateId} bytes={parts[2]}");
+            }
+            return;
+        }
+
+        if (line.StartsWith("CAM:DATA:", StringComparison.Ordinal) && _camState == CamState.Receiving)
+        {
+            _camBuffer.Append(line.AsSpan("CAM:DATA:".Length));
+            return;
+        }
+
+        if (line == "CAM:END" && _camState == CamState.Receiving)
+        {
+            try
+            {
+                var bytes = Convert.FromBase64String(_camBuffer.ToString());
+                _events.Publish(new CameraFrameReceived(_camGateId, bytes));
+                _logger.Debug(LogSource, $"CAM frame complete: gate={_camGateId} bytes={bytes.Length}");
+            }
+            catch (FormatException ex)
+            {
+                _logger.Error(LogSource, $"CAM base64 decode error: {ex.Message}");
+                _events.Publish(new CameraFrameReceived(_camGateId, []));
+            }
+            finally
+            {
+                _camState = CamState.Idle;
+                _camBuffer.Clear();
+            }
+            return;
+        }
+
+        if (line.StartsWith("CAM:ERROR:", StringComparison.Ordinal))
+        {
+            _logger.Error(LogSource, $"CAM error: {line}");
+            _events.Publish(new CameraFrameReceived(_camGateId, []));
+            _camState = CamState.Idle;
+            _camBuffer.Clear();
+        }
     }
 
     public virtual void WriteLine(string line)
