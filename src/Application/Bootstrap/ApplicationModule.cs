@@ -255,7 +255,7 @@ public static class ApplicationModule
                 sp.GetRequiredService<IArduinoReader>(),
                 sp.GetRequiredService<ICommandDispatcher>(),
                 sp.GetRequiredService<IReadOnlyDictionary<string, Sensor<SpotSensorReading>>>(),
-                sp.GetRequiredService<GateController>(),
+                sp.GetRequiredService<IGateOperationsService>(),
                 sp.GetRequiredService<ILicensePlateRecognizer>(),
                 repository,
                 sp.GetRequiredService<ILogger>(),
