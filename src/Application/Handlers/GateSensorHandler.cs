@@ -1,3 +1,4 @@
+using SmartParkingLot.Application.Gates;
 using SmartParkingLot.Core;
 using SmartParkingLot.Core.Events;
 using SmartParkingLot.Core.Interfaces;
@@ -8,20 +9,20 @@ public sealed class GateSensorHandler
 {
     private const string LogSource = "GateSensorHandler";
 
-    private readonly IGateRequestHandler _handler;
+    private readonly IGateOperationsService _gateOps;
     private readonly ILicensePlateRecognizer _plateRecognizer;
     private readonly IDisplay _display;
     private readonly ILogger _logger;
     private readonly IReadOnlyDictionary<string, (string GateId, GateType Type)> _gateSensorMapping;
 
     public GateSensorHandler(
-        IGateRequestHandler handler,
+        IGateOperationsService gateOps,
         ILicensePlateRecognizer plateRecognizer,
         IDisplay display,
         ILogger logger,
         IReadOnlyDictionary<string, (string GateId, GateType Type)> gateSensorMapping)
     {
-        _handler = handler;
+        _gateOps = gateOps;
         _plateRecognizer = plateRecognizer;
         _display = display;
         _logger = logger;
@@ -36,18 +37,17 @@ public sealed class GateSensorHandler
         var plate = await _plateRecognizer.RecognizeAsync(gate.GateId).ConfigureAwait(false);
         _logger.Info(LogSource, $"Vehículo detectado en {gate.GateId} ({gate.Type}) → {plate}");
 
-
+        // Se delega en GateOperationsService para unificar la persistencia
+        // (RequestLogs con el LotId correcto) con la ruta del botón de la GUI.
         switch (gate.Type)
         {
             case GateType.ENTRY:
-                var entry = new EntryRequest(plate) { GateId = gate.GateId };
-                await _handler.HandleRequestAsync(entry).ConfigureAwait(false);
-                _display.ShowMessage(entry.Approved ? "BIENVENIDO" : "LLENO");
+                var result = await _gateOps.RequestEntryAsync(plate, gate.GateId).ConfigureAwait(false);
+                _display.ShowMessage(result.Approved ? "BIENVENIDO" : "LLENO");
                 break;
 
             case GateType.EXIT:
-                var exit = new ExitRequest(plate) { GateId = gate.GateId };
-                await _handler.HandleRequestAsync(exit).ConfigureAwait(false);
+                await _gateOps.RequestExitAsync(plate, gate.GateId).ConfigureAwait(false);
                 _display.ShowMessage("GRACIAS");
                 break;
 

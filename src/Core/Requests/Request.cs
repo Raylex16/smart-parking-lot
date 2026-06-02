@@ -4,6 +4,7 @@ namespace SmartParkingLot.Core;
 
 public abstract class Request
 {
+    public string RequestId { get; init; } = Guid.NewGuid().ToString();
     public string GateId { get; init; } = "G-01";
     public string VehiclePlate { get; init; } = string.Empty;
     public DateTime Timestamp { get; init; } = DateTime.Now;

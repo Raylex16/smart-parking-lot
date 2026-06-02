@@ -1,5 +1,4 @@
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Navigation;
 using SmartParkingLot.Gui.ViewModels;
 
 namespace SmartParkingLot.Gui.Pages;
@@ -12,13 +11,13 @@ public sealed partial class LogPage : Page
     {
         InitializeComponent();
         ViewModel = viewModel;
+        Loaded   += (_, _) => ViewModel.Activate();
+        Unloaded += (_, _) => ViewModel.Deactivate();
     }
-
-    protected override void OnNavigatedTo(NavigationEventArgs e) => ViewModel.Activate();
-    protected override void OnNavigatedFrom(NavigationEventArgs e) => ViewModel.Deactivate();
 
     private void OnFilterChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (ViewModel is null) return;
         ViewModel.SelectedTypeIndex = TypeCombo.SelectedIndex;
         QueryBox.PlaceholderText = TypeCombo.SelectedIndex switch
         {

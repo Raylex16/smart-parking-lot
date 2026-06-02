@@ -1,2 +1,5 @@
-var app = new SmartParkingLot.Cli.ParkingLotApp();
+using SmartParkingLot.Cli;
+
+var app = new ParkingLotApp();
 await app.RunAsync();
+

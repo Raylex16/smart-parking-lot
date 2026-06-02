@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
@@ -22,6 +23,7 @@
     <ProjectReference Include="..\..\src\Core\SmartParkingLot.Core.csproj" />
     <ProjectReference Include="..\..\src\Application\SmartParkingLot.Application.csproj" />
     <ProjectReference Include="..\..\src\Hardware\SmartParkingLot.Hardware.csproj" />
+    <ProjectReference Include="..\..\src\Infrastructure\SmartParkingLot.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -3,17 +3,26 @@ using SmartParkingLot.Core.Interfaces;
 
 namespace SmartParkingLot.Application;
 
+/// <summary>
+/// Servicio que gestiona la capacidad del estacionamiento.
+/// Depende SOLO de interfaces segregadas que efectivamente usa.
+/// </summary>
 public class CapacityService : ICapacityService
 {
-    private const string LogSource = "CapacityService";
+    private const string LogSource = nameof(CapacityService);
 
     private readonly ParkingLot _parkingLot;
+    private readonly ISpotRepository _spotRepository;
     private readonly ILogger _logger;
 
-    public CapacityService(ParkingLot parkingLot, ILogger logger)
+    public CapacityService(
+        ParkingLot parkingLot,
+        ISpotRepository spotRepository,
+        ILogger logger)
     {
         _parkingLot = parkingLot;
-        _logger = logger;
+        _spotRepository = spotRepository ?? throw new ArgumentNullException(nameof(spotRepository));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public bool HasAvailableSpots() => _parkingLot.IsAvailable();

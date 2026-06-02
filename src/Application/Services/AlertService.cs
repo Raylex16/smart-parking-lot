@@ -3,19 +3,24 @@ using SmartParkingLot.Core.Interfaces;
 
 namespace SmartParkingLot.Application;
 
+/// <summary>
+/// Servicio de alertas.
+/// Depende SOLO de IAlertRepository (segregado).
+/// No depende de DbContext ni de interfaces no usadas.
+/// </summary>
 public class AlertService : IAlertService
 {
     private const string LogSource = "AlertService";
 
     private readonly List<Alert> _alerts = [];
-    private readonly IParkingRepository? _repository;
+    private readonly IAlertRepository _alertRepository;
     private readonly ILogger _logger;
     private int _alertCounter;
 
-    public AlertService(ILogger logger, IParkingRepository? repository = null)
+    public AlertService(ILogger logger, IAlertRepository alertRepository)
     {
-        _logger = logger;
-        _repository = repository;
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _alertRepository = alertRepository ?? throw new ArgumentNullException(nameof(alertRepository));
     }
 
     public void GenerateAlert(SensorReading reading)
@@ -33,10 +38,8 @@ public class AlertService : IAlertService
         var alert = new Alert(alertId, type, message);
         _alerts.Add(alert);
 
-        if (_repository != null)
-        {
-            _ = _repository.LogAlertAsync(alertId, type, message, alert.Date);
-        }
+        // Log asyncrónamente (sin bloquear)
+        _ = _alertRepository.LogAlertAsync(alertId, type, message, alert.Date);
 
         _logger.Warn(LogSource, $"{alert} (Fecha: {alert.Date:yyyy-MM-dd HH:mm:ss})");
     }
