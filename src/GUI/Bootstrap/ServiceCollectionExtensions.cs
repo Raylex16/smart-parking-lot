@@ -82,6 +82,11 @@ public static class ServiceCollectionExtensions
                 sp.GetRequiredService<GuiLogger>(),
                 sp.GetRequiredService<IUiThreadDispatcher>()));
 
+        services.AddTransient<HardwareConfigEditorViewModel>(sp =>
+            new HardwareConfigEditorViewModel(
+                sp.GetRequiredService<SmartParkingLot.Application.Hardware.HardwareConfig>(),
+                configPath));
+
         services.AddTransient<AdminPageViewModel>(sp =>
             new AdminPageViewModel(
                 sp.GetRequiredService<IGetSpotRowsQuery>(),
