@@ -2,5 +2,5 @@ namespace SmartParkingLot.Core.Interfaces;
 
 public interface ILicensePlateRecognizer
 {
-    string Recognize(string gateId);
+    Task<string> RecognizeAsync(string gateId, CancellationToken ct = default);
 }
