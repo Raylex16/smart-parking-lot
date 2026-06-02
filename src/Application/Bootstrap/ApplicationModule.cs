@@ -168,8 +168,6 @@ public static class ApplicationModule
         services.AddSingleton<GateController>(sp =>
         {
             var gc = new GateController(
-                sp.GetRequiredService<ISpotRepository>(),
-                sp.GetRequiredService<IRequestRepository>(),
                 sp.GetRequiredService<ICapacityService>(),
                 sp.GetRequiredService<IAlertService>(),
                 sp.GetRequiredService<IAccessPolicy>(),
