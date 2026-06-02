@@ -1,7 +1,6 @@
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Navigation;
 using SmartParkingLot.Gui.ViewModels;
 
 namespace SmartParkingLot.Gui.Pages;
@@ -14,10 +13,9 @@ public sealed partial class MapPage : Page
     {
         InitializeComponent();
         ViewModel = viewModel;
+        Loaded   += (_, _) => ViewModel.Activate();
+        Unloaded += (_, _) => ViewModel.Deactivate();
     }
-
-    protected override void OnNavigatedTo(NavigationEventArgs e) => ViewModel.Activate();
-    protected override void OnNavigatedFrom(NavigationEventArgs e) => ViewModel.Deactivate();
 
     private async void OnEntryClick(object sender, RoutedEventArgs e)
     {

@@ -1,5 +1,4 @@
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Navigation;
 using SmartParkingLot.Gui.ViewModels;
 
 namespace SmartParkingLot.Gui.Pages;
@@ -12,10 +11,9 @@ public sealed partial class AdminPage : Page
     {
         InitializeComponent();
         ViewModel = viewModel;
+        Loaded   += (_, _) => ViewModel.Activate();
+        Unloaded += (_, _) => ViewModel.Deactivate();
     }
-
-    protected override void OnNavigatedTo(NavigationEventArgs e) => ViewModel.Activate();
-    protected override void OnNavigatedFrom(NavigationEventArgs e) => ViewModel.Deactivate();
 
     private void OnSearchTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
@@ -24,7 +22,10 @@ public sealed partial class AdminPage : Page
     }
 
     private void OnTypeFilterChanged(object sender, SelectionChangedEventArgs e)
-        => ViewModel.TypeFilter = (TypeFilter.SelectedItem as ComboBoxItem)?.Tag as string ?? "";
+    {
+        if (ViewModel is null) return;
+        ViewModel.TypeFilter = (TypeFilter.SelectedItem as ComboBoxItem)?.Tag as string ?? "";
+    }
 
     private void OnRefreshClick(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
         => ViewModel.ReloadCommand.Execute(null);
