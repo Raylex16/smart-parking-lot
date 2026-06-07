@@ -88,7 +88,7 @@ public sealed partial class MainWindow : Window
             "dashboard" => App.Services.GetRequiredService<DashboardPage>(),
             "map"       => App.Services.GetRequiredService<MapPage>(),
             "log"       => App.Services.GetRequiredService<LogPage>(),
-            "admin"     => App.Services.GetRequiredService<AdminPage>(),
+            "access"    => App.Services.GetRequiredService<AdminPage>(),
             "hardware"  => App.Services.GetRequiredService<HardwarePage>(),
             _ => null
         };
