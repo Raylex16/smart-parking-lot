@@ -6,6 +6,7 @@ using SmartParkingLot.Application.Infrastructure;
 using SmartParkingLot.Application.Monitoring;
 using SmartParkingLot.Application.Policies;
 using SmartParkingLot.Application.Observability;
+using SmartParkingLot.Core.Entities;
 using SmartParkingLot.Application.Queries;
 using SmartParkingLot.Application.Recognition;
 using SmartParkingLot.Application.Sensors;
@@ -137,33 +138,40 @@ public static class ApplicationModule
             new ApprovalDecisionService(sp.GetRequiredService<IApprovalQueue>()));
 
         var manualTimeout = TimeSpan.FromSeconds(hwConfig.ManualApprovalTimeoutSeconds);
+
+        services.AddSingleton<IAccessPolicyConfigRepository>(_ =>
+            new SqliteAccessPolicyConfigRepository(opts.ConnectionString));
+
+        services.AddSingleton<IAccessPolicyFactory>(sp =>
+            new AccessPolicyFactory(
+                sp.GetRequiredService<IApprovalQueue>(),
+                sp.GetRequiredService<ILogger>(),
+                manualTimeout));
+
         services.AddSingleton<SwitchableAccessPolicy>(sp =>
         {
-            var queue   = sp.GetRequiredService<IApprovalQueue>();
-            var logger  = sp.GetRequiredService<ILogger>();
-            Func<ParkingMode, IAccessPolicy> factory = mode => mode switch
-            {
-                ParkingMode.MANUAL    => new ManualAccessPolicy(queue, logger, manualTimeout),
-                ParkingMode.AUTOMATIC => new AlwaysAllowPolicy(),
-                _                     => new AlwaysAllowPolicy()
-            };
-            return new SwitchableAccessPolicy(factory(lot.Mode));
+            var factory    = sp.GetRequiredService<IAccessPolicyFactory>();
+            var configRepo = sp.GetRequiredService<IAccessPolicyConfigRepository>();
+            var config     = configRepo.GetByLotIdAsync(lot.Id).GetAwaiter().GetResult()
+                             ?? new AccessPolicyConfig(lot.Id);
+            return new SwitchableAccessPolicy(factory.Create(lot.Mode, config));
         });
         services.AddSingleton<IAccessPolicy>(sp => sp.GetRequiredService<SwitchableAccessPolicy>());
 
         services.AddSingleton<IParkingModeService>(sp =>
-        {
-            var queue   = sp.GetRequiredService<IApprovalQueue>();
-            var logger  = sp.GetRequiredService<ILogger>();
-            var policy  = sp.GetRequiredService<SwitchableAccessPolicy>();
-            Func<ParkingMode, IAccessPolicy> factory = mode => mode switch
-            {
-                ParkingMode.MANUAL    => new ManualAccessPolicy(queue, logger, manualTimeout),
-                ParkingMode.AUTOMATIC => new AlwaysAllowPolicy(),
-                _                     => new AlwaysAllowPolicy()
-            };
-            return new ParkingModeService(lot, policy, repository, logger, factory);
-        });
+            new ParkingModeService(
+                lot,
+                sp.GetRequiredService<SwitchableAccessPolicy>(),
+                (IParkingLotRepository)repository,
+                sp.GetRequiredService<ILogger>(),
+                sp.GetRequiredService<IAccessPolicyFactory>(),
+                sp.GetRequiredService<IAccessPolicyConfigRepository>()));
+
+        services.AddSingleton<IAccessPolicyConfigService>(sp =>
+            new AccessPolicyConfigService(
+                sp.GetRequiredService<IAccessPolicyConfigRepository>(),
+                sp.GetRequiredService<IParkingModeService>(),
+                lot));
 
         services.AddSingleton<GateController>(sp =>
         {
