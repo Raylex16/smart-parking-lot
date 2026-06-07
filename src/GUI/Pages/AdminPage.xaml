@@ -8,130 +8,223 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
+        <!-- Header -->
         <Grid Grid.Row="0" Height="56" Padding="20,0"
               Background="{ThemeResource Layer1Brush}"
               BorderBrush="{ThemeResource StrokeBrush}"
               BorderThickness="0,0,0,1">
             <StackPanel VerticalAlignment="Center">
-                <TextBlock x:Uid="AdminPageTitle"
-                           FontSize="15"
-                           FontWeight="SemiBold"
+                <TextBlock Text="Control de Acceso"
+                           FontSize="15" FontWeight="SemiBold"
                            Foreground="{ThemeResource Tx1Brush}" />
-                <TextBlock x:Uid="AdminPageSubtitle"
-                           FontSize="11"
-                           Foreground="{ThemeResource Tx3Brush}" />
+                <TextBlock Text="Política activa y parámetros de acceso al parqueadero"
+                           FontSize="11" Foreground="{ThemeResource Tx3Brush}" />
             </StackPanel>
         </Grid>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Padding="16,8" Spacing="8"
-                    Background="{ThemeResource Layer1Brush}"
-                    BorderBrush="{ThemeResource Stroke2Brush}"
-                    BorderThickness="0,0,0,1">
-            <AutoSuggestBox x:Name="SearchBox"
-                            x:Uid="AdminSearchBox"
-                            MinWidth="320"
-                            TextChanged="OnSearchTextChanged" />
-            <ComboBox x:Name="TypeFilter" SelectedIndex="0" SelectionChanged="OnTypeFilterChanged">
-                <ComboBoxItem x:Uid="AdminTypeFilterAll" Tag="" />
-                <ComboBoxItem x:Uid="AdminTypeFilterEstandar" Tag="Estándar" />
-                <ComboBoxItem Content="PMR" Tag="PMR" />
-                <ComboBoxItem x:Uid="AdminTypeFilterMoto" Tag="Moto" />
-            </ComboBox>
-            <Button Click="OnRefreshClick">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph=""
-                              AutomationProperties.Name="Actualizar"
-                              FontSize="12" />
-                    <TextBlock x:Uid="AdminRefreshButton" />
-                </StackPanel>
-            </Button>
-        </StackPanel>
+        <!-- Contenido principal -->
+        <ScrollViewer Grid.Row="1" Padding="20" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="16">
 
-        <Border Grid.Row="2" Style="{StaticResource CardStyle}" Margin="16">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel>
-                    <Grid Padding="14,8" Background="{ThemeResource Layer1Brush}"
-                          BorderBrush="{ThemeResource StrokeBrush}"
-                          BorderThickness="0,0,0,1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="80" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="100" />
-                            <ColumnDefinition Width="100" />
-                            <ColumnDefinition Width="120" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock x:Uid="AdminColId" Grid.Column="0"
+                <!-- Sección: Política activa -->
+                <Border Style="{StaticResource CardStyle}" Padding="20">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="POLÍTICA ACTIVA"
                                    FontSize="10" FontWeight="SemiBold" CharacterSpacing="60"
                                    Foreground="{ThemeResource Tx3Brush}" />
-                        <TextBlock x:Uid="AdminColAddress" Grid.Column="1"
-                                   FontSize="10" FontWeight="SemiBold" CharacterSpacing="60"
-                                   Foreground="{ThemeResource Tx3Brush}" />
-                        <TextBlock x:Uid="AdminColType" Grid.Column="2"
-                                   FontSize="10" FontWeight="SemiBold" CharacterSpacing="60"
-                                   Foreground="{ThemeResource Tx3Brush}" />
-                        <TextBlock x:Uid="AdminColFloor" Grid.Column="3"
-                                   FontSize="10" FontWeight="SemiBold" CharacterSpacing="60"
-                                   Foreground="{ThemeResource Tx3Brush}" />
-                        <TextBlock x:Uid="AdminColState" Grid.Column="4"
-                                   FontSize="10" FontWeight="SemiBold" CharacterSpacing="60"
-                                   Foreground="{ThemeResource Tx3Brush}" />
-                    </Grid>
-                    <ItemsRepeater ItemsSource="{x:Bind ViewModel.FilteredSpots, Mode=OneWay}">
-                        <ItemsRepeater.ItemTemplate>
-                            <DataTemplate x:DataType="vm:SpotAdminRowVm">
-                                <Grid Padding="14,8,14,8"
-                                      BorderBrush="{ThemeResource Stroke2Brush}"
-                                      BorderThickness="0,0,0,1">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="80" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="100" />
-                                        <ColumnDefinition Width="100" />
-                                        <ColumnDefinition Width="120" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0"
-                                               Text="{x:Bind Id}"
-                                               FontFamily="Cascadia Code, Consolas, monospace"
-                                               FontSize="11" FontWeight="SemiBold"
-                                               VerticalAlignment="Center"
-                                               Foreground="{ThemeResource Tx1Brush}" />
-                                    <TextBlock Grid.Column="1"
-                                               Text="{x:Bind Address}"
-                                               FontSize="12" VerticalAlignment="Center"
-                                               Foreground="{ThemeResource Tx2Brush}"
-                                               TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Grid.Column="2"
-                                               Text="{x:Bind Type}"
-                                               FontSize="11" VerticalAlignment="Center"
-                                               Foreground="{ThemeResource Tx2Brush}" />
-                                    <TextBlock Grid.Column="3"
-                                               Text="{x:Bind Floor}"
-                                               FontSize="11" VerticalAlignment="Center"
-                                               Foreground="{ThemeResource Tx3Brush}" />
-                                    <TextBlock Grid.Column="4"
-                                               Text="{x:Bind StateLabel}"
-                                               FontSize="11" VerticalAlignment="Center"
-                                               Foreground="{ThemeResource Tx2Brush}" />
-                                </Grid>
-                            </DataTemplate>
-                        </ItemsRepeater.ItemTemplate>
-                    </ItemsRepeater>
-                </StackPanel>
-            </ScrollViewer>
-        </Border>
 
-        <Grid Grid.Row="3" Padding="16,8"
-              Background="{ThemeResource Layer1Brush}"
-              BorderBrush="{ThemeResource StrokeBrush}"
-              BorderThickness="0,1,0,0">
-            <TextBlock Text="{x:Bind ViewModel.FooterText, Mode=OneWay}"
-                       FontSize="11"
-                       Foreground="{ThemeResource Tx3Brush}" />
-        </Grid>
+                        <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                            <ComboBox SelectedIndex="{x:Bind ViewModel.SelectedModeIndex, Mode=TwoWay}"
+                                      MinWidth="200">
+                                <ComboBoxItem Content="Automático" />
+                                <ComboBoxItem Content="Manual (aprobación operario)" />
+                                <ComboBoxItem Content="Restringido (whitelist)" />
+                                <ComboBoxItem Content="Programado (horario)" />
+                            </ComboBox>
+                            <Border CornerRadius="4" Padding="10,4"
+                                    Background="{x:Bind ViewModel.PolicyBadgeColor, Mode=OneWay}">
+                                <TextBlock Text="{x:Bind ViewModel.PolicyBadgeText, Mode=OneWay}"
+                                           FontSize="11" FontWeight="SemiBold"
+                                           Foreground="White" />
+                            </Border>
+                        </StackPanel>
+
+                        <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+                                   FontSize="12" Foreground="{ThemeResource Tx3Brush}"
+                                   Visibility="{x:Bind ViewModel.HasStatusMessage, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Panel: Whitelist (RESTRICTED) -->
+                <Border Style="{StaticResource CardStyle}" Padding="20"
+                        Visibility="{x:Bind ViewModel.ShowWhitelistPanel, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="PLACAS PERMITIDAS"
+                                   FontSize="10" FontWeight="SemiBold" CharacterSpacing="60"
+                                   Foreground="{ThemeResource Tx3Brush}" />
+
+                        <InfoBar IsOpen="{x:Bind ViewModel.WhitelistIsEmpty, Mode=OneWay}"
+                                 Severity="Warning"
+                                 Title="Whitelist vacía"
+                                 Message="Ningún vehículo podrá ingresar mientras la whitelist esté vacía." />
+
+                        <!-- Lista de placas -->
+                        <ItemsRepeater ItemsSource="{x:Bind ViewModel.Plates, Mode=OneWay}">
+                            <ItemsRepeater.ItemTemplate>
+                                <DataTemplate x:DataType="vm:PlateRowVm">
+                                    <Grid Padding="0,4" ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{x:Bind Plate}"
+                                                   FontFamily="Cascadia Code, Consolas, monospace"
+                                                   FontSize="13" VerticalAlignment="Center"
+                                                   Foreground="{ThemeResource Tx1Brush}" />
+                                        <Button Grid.Column="1"
+                                                Command="{x:Bind RemoveCommand}"
+                                                CommandParameter="{x:Bind}"
+                                                AutomationProperties.Name="Eliminar placa">
+                                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE711;"
+                                                      FontSize="12" />
+                                        </Button>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsRepeater.ItemTemplate>
+                        </ItemsRepeater>
+
+                        <!-- Añadir nueva placa -->
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBox Text="{x:Bind ViewModel.NewPlate, Mode=TwoWay}"
+                                     PlaceholderText="Ej: ABC-123"
+                                     MinWidth="160" />
+                            <Button Command="{x:Bind ViewModel.AddPlateCommand}"
+                                    AutomationProperties.Name="Añadir placa">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE710;" FontSize="12" />
+                                    <TextBlock Text="Añadir" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <Button Command="{x:Bind ViewModel.SaveWhitelistCommand}" Style="{StaticResource AccentButtonStyle}">
+                            <TextBlock Text="Guardar whitelist" />
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <!-- Panel: Horario (SCHEDULED) -->
+                <Border Style="{StaticResource CardStyle}" Padding="20"
+                        Visibility="{x:Bind ViewModel.ShowSchedulePanel, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="HORARIO DE ACCESO"
+                                   FontSize="10" FontWeight="SemiBold" CharacterSpacing="60"
+                                   Foreground="{ThemeResource Tx3Brush}" />
+
+                        <Grid ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Hora de inicio" FontSize="12"
+                                           Foreground="{ThemeResource Tx2Brush}" />
+                                <TimePicker SelectedTime="{x:Bind ViewModel.ScheduleStart, Mode=TwoWay}"
+                                            ClockIdentifier="24HourClock" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock Text="Hora de fin" FontSize="12"
+                                           Foreground="{ThemeResource Tx2Brush}" />
+                                <TimePicker SelectedTime="{x:Bind ViewModel.ScheduleEnd, Mode=TwoWay}"
+                                            ClockIdentifier="24HourClock" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Button Command="{x:Bind ViewModel.SaveScheduleCommand}" Style="{StaticResource AccentButtonStyle}">
+                            <TextBlock Text="Guardar horario" />
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <!-- Cola de aprobaciones en vivo -->
+                <Border Style="{StaticResource CardStyle}" Padding="20">
+                    <StackPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <TextBlock Text="APROBACIONES PENDIENTES"
+                                       FontSize="10" FontWeight="SemiBold" CharacterSpacing="60"
+                                       Foreground="{ThemeResource Tx3Brush}"
+                                       VerticalAlignment="Center" />
+                            <Border CornerRadius="10" Padding="8,2"
+                                    Background="{ThemeResource AccentFillColorDefaultBrush}">
+                                <TextBlock Text="{x:Bind ViewModel.ApprovalsBadgeText, Mode=OneWay}"
+                                           FontSize="11" FontWeight="SemiBold"
+                                           Foreground="White" />
+                            </Border>
+                        </StackPanel>
+
+                        <TextBlock Text="Sin aprobaciones pendientes — el modo actual no requiere aprobación manual."
+                                   FontSize="12" Foreground="{ThemeResource Tx3Brush}"
+                                   Visibility="{x:Bind ViewModel.PendingApprovals.Count, Mode=OneWay, Converter={StaticResource IntToVisibilityConverter}}" />
+
+                        <ItemsRepeater ItemsSource="{x:Bind ViewModel.PendingApprovals, Mode=OneWay}">
+                            <ItemsRepeater.ItemTemplate>
+                                <DataTemplate x:DataType="vm:PendingApprovalRowVm">
+                                    <Grid Padding="0,6" ColumnSpacing="12"
+                                          BorderBrush="{ThemeResource Stroke2Brush}"
+                                          BorderThickness="0,0,0,1">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="120" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="100" />
+                                            <ColumnDefinition Width="80" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{x:Bind Id}"
+                                                   FontFamily="Cascadia Code, Consolas, monospace"
+                                                   FontSize="11" VerticalAlignment="Center"
+                                                   Foreground="{ThemeResource Tx3Brush}" />
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{x:Bind Plate}"
+                                                   FontSize="13" FontWeight="SemiBold"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{ThemeResource Tx1Brush}" />
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{x:Bind GateId}"
+                                                   FontSize="12" VerticalAlignment="Center"
+                                                   Foreground="{ThemeResource Tx2Brush}" />
+                                        <TextBlock Grid.Column="3"
+                                                   Text="{x:Bind ElapsedLabel, Mode=OneWay}"
+                                                   FontSize="11" VerticalAlignment="Center"
+                                                   Foreground="{ThemeResource Tx3Brush}" />
+                                        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6">
+                                            <Button Command="{x:Bind ApproveCommand}"
+                                                    Style="{StaticResource AccentButtonStyle}"
+                                                    AutomationProperties.Name="Aprobar">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE73E;" FontSize="12" />
+                                                    <TextBlock Text="Aprobar" FontSize="12" />
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Command="{x:Bind DenyCommand}"
+                                                    AutomationProperties.Name="Denegar">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE711;" FontSize="12" />
+                                                    <TextBlock Text="Denegar" FontSize="12" />
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsRepeater.ItemTemplate>
+                        </ItemsRepeater>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </Page>

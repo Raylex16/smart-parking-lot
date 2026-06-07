@@ -2,13 +2,16 @@
 <Application
     x:Class="SmartParkingLot.Gui.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="using:SmartParkingLot.Gui.Converters">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
                 <ResourceDictionary Source="Styles/Theme.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+            <converters:IntToVisibilityConverter  x:Key="IntToVisibilityConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

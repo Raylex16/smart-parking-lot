@@ -88,9 +88,9 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItemHeader Content="ADMINISTRACIÓN" />
-                <NavigationViewItem Tag="admin" Content="Gestión de Spots">
+                <NavigationViewItem Tag="access" Content="Control de Acceso">
                     <NavigationViewItem.Icon>
-                        <SymbolIcon Symbol="ContactInfo" />
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE8D7;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Tag="hardware" Content="Hardware / Arduino">
