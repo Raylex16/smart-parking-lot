@@ -13,6 +13,7 @@ public class CompositeLogger : ILogger
 
     public void Log(LogLevel level, string source, string message)
     {
+        
         foreach (var logger in _loggers)
         {
             logger.Log(level, source, message);

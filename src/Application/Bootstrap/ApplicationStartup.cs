@@ -1,4 +1,5 @@
 using SmartParkingLot.Application.Display;
+using SmartParkingLot.Application.Gates;
 using SmartParkingLot.Application.Hardware;
 using SmartParkingLot.Application.Handlers;
 using SmartParkingLot.Application.Infrastructure;
@@ -19,7 +20,7 @@ public sealed class ApplicationStartup : IApplicationStartup
     private readonly IArduinoReader _bridge;
     private readonly ICommandDispatcher _dispatcher;
     private readonly IReadOnlyDictionary<string, Sensor<SpotSensorReading>> _spotSensors;
-    private readonly GateController _gateController;
+    private readonly IGateOperationsService _gateOperations;
     private readonly ILicensePlateRecognizer _plateRecognizer;
     private readonly IParkingRepository _repository;
     private readonly ILogger _logger;
@@ -32,7 +33,7 @@ public sealed class ApplicationStartup : IApplicationStartup
         IArduinoReader bridge,
         ICommandDispatcher dispatcher,
         IReadOnlyDictionary<string, Sensor<SpotSensorReading>> spotSensors,
-        GateController gateController,
+        IGateOperationsService gateOperations,
         ILicensePlateRecognizer plateRecognizer,
         IParkingRepository repository,
         ILogger logger,
@@ -44,7 +45,7 @@ public sealed class ApplicationStartup : IApplicationStartup
         _bridge          = bridge;
         _dispatcher      = dispatcher;
         _spotSensors     = spotSensors;
-        _gateController  = gateController;
+        _gateOperations  = gateOperations;
         _plateRecognizer = plateRecognizer;
         _repository      = repository;
         _logger          = logger;
@@ -75,7 +76,7 @@ public sealed class ApplicationStartup : IApplicationStartup
         persistHandler.Subscribe(_lot.GetSpots());
 
         var gateSensorHandler = new GateSensorHandler(
-            _gateController, _plateRecognizer, lcdDisplay, _logger,
+            _gateOperations, _plateRecognizer, lcdDisplay, _logger,
             _hwConfig.BuildGateSensorMapping());
         _bus.SubscribeAsync<SensorReadingReceived>(gateSensorHandler.HandleAsync, _logger, "GateSensorHandler");
 

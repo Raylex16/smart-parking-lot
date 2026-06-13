@@ -1,21 +1,24 @@
 // Master del Smart Parking Lot.
-// Maneja sensores IR (spots y puertas), LEDs, LCD I2C y servo de la puerta de entrada.
-// El servo de la puerta de salida (GATE2) lo opera un Uno esclavo via I2C.
-// Soporte de cámara OV7670 por puerta para reconocimiento de placas (QQVGA grayscale, base64).
+// Maneja sensores IR (spots y puertas), LEDs, LCD I2C y servos de puertas.
+// El servo de entrada (GATE1) y salida (GATE2) los opera un Uno esclavo via I2C.
 //
-// I2C bus Wire  (pins 20 SDA / 21 SCL): LCD 16x2 (0x27), Uno esclavo (0x08)
-// I2C bus Wire1 (pins 70 SDA1/ 71 SCL1): OV7670 SCCB (0x21)
+// I2C Wire (pins 20 SDA / 21 SCL en el Mega):
+//   0x27 -> LCD 16x2
+//   0x08 -> Uno esclavo (controla servos GATE1 y GATE2)
+// I2C Wire1 (pins 70 SDA1 / 71 SCL1 en el Mega):
+//   0x21 -> OV7670 G-01 y G-02 (uso disyuntivo via PWDN — pines 33 y 34)
+//   Integracion de camaras pendiente: ver hardware-wiring.md seccion 5.
 
 #include <Servo.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
-// ── Sensores y LEDs de spots ───────────────────────────────────────────────
-const int SENSOR_COUNT = 3;
+const int SENSOR_COUNT = 4;
 const int GATE_COUNT   = 2;
 
-const int IR_PINS[SENSOR_COUNT]  = { 7, 6, 5 };
-const int LED_PINS[SENSOR_COUNT] = { 13, 12, 11 };
+const int IR_PINS[SENSOR_COUNT]  = { 7, 6, 5, 9 };
+const int LED_PINS[SENSOR_COUNT] = { 13, 12, 11, 10 };
+
 const int GATE_IR_PINS[GATE_COUNT] = { 4, 3 };
 
 const int     GATE_LOCAL_PIN[GATE_COUNT]  = { -1,   -1   };
@@ -28,49 +31,7 @@ const uint8_t LCD_COLS         = 16;
 const uint8_t LCD_ROWS         = 2;
 const unsigned long MSG_DURATION_MS = 3000;
 
-// ── OV7670 ────────────────────────────────────────────────────────────────
-// Pines de señal (ver docs/hardware-wiring.md para diagrama completo)
-#define OV_VSYNC  2   // PE4 — frame sync
-#define OV_HREF   3   // PE5 — line active
-#define OV_PCLK   4   // PG5 — pixel clock
-#define OV_XCLK   11  // PB5 / OC1A — master clock 8 MHz
-#define OV_RESET  32  // PC5 — activo bajo
-#define OV_PWDN   33  // PC4 — activo alto = apagado
-
-// Dirección 7-bit SCCB (0x42>>1)
-#define OV7670_ADDR 0x21
-
-#define QQVGA_W     160
-#define QQVGA_H     120
-#define QQVGA_BYTES (QQVGA_W * QQVGA_H)   // 19 200 bytes por frame
-
-// Registros mínimos para QQVGA YUV422 (YUYV). Ajustar según muestra física.
-// Sentinel de fin: {0xFF, 0xFF}
-static const uint8_t OV7670_QQVGA_YUV[][2] = {
-    {0x12, 0x80},  // COM7: soft reset (auto-clears, esperar 100 ms)
-    {0x11, 0x01},  // CLKRC: sin dividir el clock externo
-    {0x12, 0x00},  // COM7: YUV output
-    {0x0C, 0x04},  // COM3: scale enable
-    {0x3E, 0x19},  // COM14: manual scaling, PCLK /4
-    {0x70, 0x3A},  // SCALING_XSC
-    {0x71, 0x35},  // SCALING_YSC
-    {0x72, 0x11},  // SCALING_DCWCTR: H/2 V/2 → QQVGA
-    {0x73, 0xF1},  // SCALING_PCLK_DIV: /2
-    {0xA2, 0x02},  // SCALING_PCLK_DELAY
-    {0x15, 0x00},  // COM10: polaridades normales
-    {0x17, 0x16},  // HSTART
-    {0x18, 0x04},  // HSTOP
-    {0x19, 0x02},  // VSTART
-    {0x1A, 0x7A},  // VSTOP
-    {0x32, 0x80},  // HREF edge offset
-    {0x03, 0x0A},  // VREF
-    {0x3A, 0x04},  // TSLB: YUYV byte order
-    {0x40, 0xD0},  // COM15: full output range
-    {0xFF, 0xFF},  // fin
-};
-
-// ── Estado global ─────────────────────────────────────────────────────────
-int lastState[SENSOR_COUNT]   = { -1, -1, -1 };
+int lastState[SENSOR_COUNT]   = { -1, -1, -1, -1 };
 int lastGateState[GATE_COUNT] = { -1, -1 };
 Servo localGates[GATE_COUNT];
 LiquidCrystal_I2C lcd(LCD_I2C_ADDR, LCD_COLS, LCD_ROWS);

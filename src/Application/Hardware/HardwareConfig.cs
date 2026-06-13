@@ -47,6 +47,23 @@ public sealed record HardwareConfig(
             ?? throw new InvalidOperationException("hardware.json no pudo deserializarse.");
     }
 
+    public void Save(string path)
+    {
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
+
+        var json = JsonSerializer.Serialize(this, options);
+
+        // Escritura atómica: archivo temporal + move para no corromper el config
+        // si el proceso muere a mitad de la escritura.
+        var tmp = path + ".tmp";
+        File.WriteAllText(tmp, json);
+        File.Move(tmp, path, overwrite: true);
+    }
+
     public IReadOnlyDictionary<string, string> BuildSensorToSpot() =>
         Sensors.ToDictionary(m => m.SensorId, m => m.SpotId);
 

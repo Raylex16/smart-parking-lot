@@ -101,6 +101,13 @@ public class DatabaseInitializer
         CREATE INDEX IF NOT EXISTS IX_DeviceActions_Timestamp ON DeviceActions(Timestamp);
         CREATE INDEX IF NOT EXISTS IX_Alerts_Timestamp ON Alerts(Timestamp);
         CREATE INDEX IF NOT EXISTS IX_Alerts_Type ON Alerts(Type);
+
+        CREATE TABLE IF NOT EXISTS AccessPolicyConfigs (
+            LotId TEXT PRIMARY KEY,
+            AllowedPlatesJson TEXT NOT NULL DEFAULT '[]',
+            ScheduleStart TEXT NOT NULL DEFAULT '08:00:00',
+            ScheduleEnd TEXT NOT NULL DEFAULT '20:00:00'
+        );
         """;
 
         using var command = connection.CreateCommand();

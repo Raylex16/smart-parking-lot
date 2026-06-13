@@ -5,13 +5,13 @@ using Microsoft.UI.Dispatching;
 using SmartParkingLot.Application.Bootstrap;
 using SmartParkingLot.Application.Approvals;
 using SmartParkingLot.Application.Gates;
+using SmartParkingLot.Core.Interfaces;
 using SmartParkingLot.Application.Hardware;
 using SmartParkingLot.Application.Logging;
 using SmartParkingLot.Application.Monitoring;
 using SmartParkingLot.Application.Observability;
 using SmartParkingLot.Application.Queries;
 using SmartParkingLot.Application.Sensors;
-using SmartParkingLot.Core.Interfaces;
 using SmartParkingLot.Gui.Infrastructure;
 using SmartParkingLot.Gui.ViewModels;
 
@@ -82,10 +82,21 @@ public static class ServiceCollectionExtensions
                 sp.GetRequiredService<GuiLogger>(),
                 sp.GetRequiredService<IUiThreadDispatcher>()));
 
-        services.AddTransient<AdminPageViewModel>(sp =>
-            new AdminPageViewModel(
-                sp.GetRequiredService<IGetSpotRowsQuery>(),
-                sp.GetRequiredService<ILotSnapshotStream>()));
+        services.AddTransient<HardwareConfigEditorViewModel>(sp =>
+            new HardwareConfigEditorViewModel(
+                sp.GetRequiredService<SmartParkingLot.Application.Hardware.HardwareConfig>(),
+                configPath));
+
+        services.AddTransient<AccessControlViewModel>(sp =>
+            new AccessControlViewModel(
+                sp.GetRequiredService<IParkingModeService>(),
+                sp.GetRequiredService<IAccessPolicyConfigService>(),
+                sp.GetRequiredService<ILotSnapshotStream>(),
+                sp.GetRequiredService<IUiThreadDispatcher>(),
+                sp.GetRequiredService<IApprovalQueue>(),
+                sp.GetRequiredService<IApprovalDecisionService>(),
+                Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread(),
+                sp.GetRequiredService<SmartParkingLot.Core.ParkingLot>()));
 
         services.AddTransient<LogPageViewModel>(sp =>
             new LogPageViewModel(
@@ -98,9 +109,11 @@ public static class ServiceCollectionExtensions
         services.AddTransient<Pages.LogPage>(sp =>
             new Pages.LogPage(sp.GetRequiredService<LogPageViewModel>()));
         services.AddTransient<Pages.AdminPage>(sp =>
-            new Pages.AdminPage(sp.GetRequiredService<AdminPageViewModel>()));
+            new Pages.AdminPage(sp.GetRequiredService<AccessControlViewModel>()));
         services.AddTransient<Pages.HardwarePage>(sp =>
-            new Pages.HardwarePage(sp.GetRequiredService<HardwarePageViewModel>()));
+            new Pages.HardwarePage(
+                sp.GetRequiredService<HardwarePageViewModel>(),
+                sp.GetRequiredService<HardwareConfigEditorViewModel>()));
 
         var provider = services.BuildServiceProvider();
 
